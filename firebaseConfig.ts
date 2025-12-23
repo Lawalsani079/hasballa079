@@ -3,7 +3,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 /**
- * Configuration Firebase mise à jour avec les clés fournies par l'utilisateur.
+ * Configuration Firebase officielle du projet "recharge-a1d14".
+ * Assurez-vous que les règles Firestore sur console.firebase.google.com sont :
+ * allow read, write: if true; (ou selon vos besoins de sécurité)
  */
 const firebaseConfig = {
   apiKey: "AIzaSyC8ahCCT_FSH5vk2zq5wCryUG75_1q-4jA",
@@ -18,5 +20,5 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 
-// Vérifie si l'utilisateur utilise encore l'ID de projet de démonstration par erreur
+// Vérification de sécurité pour s'assurer qu'on n'utilise plus l'ID de démonstration
 export const isPlaceholderConfig = firebaseConfig.projectId === "recharge-plus-demo";

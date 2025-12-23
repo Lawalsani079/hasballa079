@@ -34,11 +34,16 @@ const App: React.FC = () => {
         querySnapshot.forEach((doc) => {
           const rawData = doc.data();
           
-          // Fix: Ensure we only keep serializable data to avoid circular structure errors
-          // Firebase Timestamps have internal methods that can cause issues if stringified
-          const cleanData = { ...rawData };
-          if (cleanData.createdAt && typeof cleanData.createdAt.toMillis === 'function') {
-            cleanData.createdAt = cleanData.createdAt.toMillis();
+          // Nettoyage strict pour éviter l'erreur "Circular structure to JSON"
+          // On extrait uniquement les primitives sérialisables
+          const cleanData: any = {};
+          for (const key in rawData) {
+            const value = rawData[key];
+            if (value && typeof value === 'object' && typeof value.toMillis === 'function') {
+              cleanData[key] = value.toMillis();
+            } else if (typeof value !== 'function') {
+              cleanData[key] = value;
+            }
           }
 
           reqs.push({ 
@@ -49,14 +54,14 @@ const App: React.FC = () => {
         setRequests(reqs);
         setDbError(null);
       }, (error) => {
-        // Fix: Avoid logging the full error object directly
-        const errorMessage = error.message || "Unknown Firestore error";
-        console.error("Firestore error:", errorMessage);
+        // IMPORTANT: Ne logguez que le message pour éviter les références circulaires dans l'objet Error
+        const msg = error.message || "Erreur Firestore";
+        console.error("Firestore error message:", msg);
         
         if (error.code === 'permission-denied') {
-          setDbError("Erreur : Permission refusée. Vérifiez vos règles Firestore (doivent être en mode lecture/écriture publique pour ce test).");
+          setDbError("Accès refusé. Vérifiez vos règles Firestore sur la console Firebase.");
         } else {
-          setDbError("Erreur de connexion : " + errorMessage);
+          setDbError("Erreur : " + msg);
         }
       });
     } catch (err: any) {
@@ -85,7 +90,7 @@ const App: React.FC = () => {
       
       {isPlaceholderConfig && currentView !== 'splash' && (
         <div className="bg-red-600 text-white text-[10px] py-1 px-4 text-center font-bold z-50">
-          ATTENTION : ID PROJET INCORRECT DANS LA CONFIG
+          PROJECT ID INCORRECT DANS LA CONFIG
         </div>
       )}
 

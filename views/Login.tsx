@@ -24,7 +24,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateRegister }) => {
 
     try {
       if (isAdminMode) {
-        if (username === ADMIN_CREDENTIALS.id && password === ADMIN_CREDENTIALS.password) {
+        if (username.trim() === ADMIN_CREDENTIALS.id && password === ADMIN_CREDENTIALS.password) {
           onLogin({ id: 'admin-1', name: 'Administrateur', phone: '000', role: 'admin' });
         } else {
           setError('Identifiants admin incorrects');
@@ -41,23 +41,24 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateRegister }) => {
         
         if (!querySnapshot.empty) {
           const doc = querySnapshot.docs[0];
-          // S'assurer de n'extraire que les données sérialisables
           const userData = doc.data();
+          
+          // Nettoyage pour éviter toute référence circulaire
           onLogin({ 
             id: doc.id, 
-            name: userData.name,
-            phone: userData.phone,
-            role: userData.role 
-          } as User);
+            name: String(userData.name),
+            phone: String(userData.phone),
+            role: 'user' 
+          });
         } else {
           setError('Nom d\'utilisateur ou mot de passe incorrect');
         }
       }
     } catch (err: any) {
-      console.error("Login catch error:", err.message);
+      console.error("Login error message:", err.message);
       setError(err.code === 'permission-denied' 
-        ? 'Erreur Firebase : Permission refusée' 
-        : 'Erreur de connexion au serveur');
+        ? 'Erreur Firebase : Permission refusée sur le projet' 
+        : 'Erreur de connexion : ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -90,13 +91,27 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateRegister }) => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-300"><i className="fas fa-user"></i></span>
-            <input type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder={isAdminMode ? "Identifiant" : "Nom complet"} className="w-full bg-white py-4 pl-12 pr-4 rounded-2xl shadow-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all" disabled={loading} />
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-300"><i className={`fas ${isAdminMode ? 'fa-envelope' : 'fa-user'}`}></i></span>
+            <input 
+              type={isAdminMode ? "email" : "text"} 
+              value={username} 
+              onChange={e => setUsername(e.target.value)} 
+              placeholder={isAdminMode ? "champion@gmail.com" : "Nom complet"} 
+              className="w-full bg-white py-4 pl-12 pr-4 rounded-2xl shadow-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all" 
+              disabled={loading} 
+            />
           </div>
 
           <div className="relative">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-300"><i className="fas fa-lock"></i></span>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Mot de passe" className="w-full bg-white py-4 pl-12 pr-4 rounded-2xl shadow-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all" disabled={loading} />
+            <input 
+              type="password" 
+              value={password} 
+              onChange={e => setPassword(e.target.value)} 
+              placeholder="Mot de passe" 
+              className="w-full bg-white py-4 pl-12 pr-4 rounded-2xl shadow-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all" 
+              disabled={loading} 
+            />
           </div>
 
           {error && <div className="p-3 bg-red-100 border border-red-200 rounded-xl"><p className="text-red-600 text-center text-xs font-bold">{error}</p></div>}

@@ -19,6 +19,6 @@ export const METHODS = ['Nita', 'Amana'];
 export const BOOKMAKERS = ['1xbet', 'Melbet', 'Betwinner'];
 
 export const ADMIN_CREDENTIALS = {
-  id: 'champion',
-  password: 'champion2000'
+  id: 'champion@gmail.com',
+  password: 'champion@2000'
 };
