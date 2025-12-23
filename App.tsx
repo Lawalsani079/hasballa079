@@ -65,19 +65,16 @@ const App: React.FC = () => {
           const rawData = doc.data();
           const cleanData: any = { id: doc.id };
           
-          // Sanitization logic to avoid circular structures and complex objects in state
           Object.keys(rawData).forEach(key => {
             const val = rawData[key];
             if (val && typeof val === 'object') {
               if (typeof val.toMillis === 'function') {
                 cleanData[key] = val.toMillis();
-              } else if (val.seconds !== undefined) { // Fallback for simple timestamp objects
+              } else if (val.seconds !== undefined) {
                 cleanData[key] = val.seconds * 1000;
               } else if (Array.isArray(val)) {
-                cleanData[key] = [...val]; // Shallow copy array
+                cleanData[key] = [...val];
               } else {
-                // If it's a complex object we don't recognize, we stringify or skip to avoid circular issues
-                // For TransactionRequest fields, we expect strings/numbers mostly
                 if (['amount', 'bookmakerId', 'withdrawCode', 'userName', 'userPhone', 'method', 'bookmaker', 'status', 'type', 'proofImage'].includes(key)) {
                   cleanData[key] = String(val);
                 }
@@ -111,7 +108,6 @@ const App: React.FC = () => {
   }, []);
 
   const handleLogin = (user: User) => {
-    // Ensure the user object is a plain object without circular refs
     setCurrentUser({
       id: String(user.id),
       name: String(user.name),
@@ -128,82 +124,80 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-white shadow-xl relative overflow-hidden flex flex-col font-['Poppins']">
+    <div className="w-full h-full max-w-md mx-auto bg-white shadow-2xl relative overflow-hidden flex flex-col font-['Poppins']">
       {currentView === 'splash' && <SplashScreen />}
       
       {isPlaceholderConfig && currentView !== 'splash' && (
-        <div className="bg-red-600 text-white text-[10px] py-1 px-4 text-center font-bold z-50">
+        <div className="bg-red-600 text-white text-[10px] py-1 px-4 text-center font-bold z-[60] shrink-0">
           PROJECT ID INCORRECT DANS LA CONFIG
         </div>
       )}
 
       {dbError && (
-        <div className="bg-orange-500 text-white text-[10px] py-2 px-4 text-center z-50 shadow-md">
+        <div className="bg-orange-500 text-white text-[10px] py-2 px-4 text-center z-[60] shadow-md shrink-0">
           {dbError}
         </div>
       )}
       
-      {currentView === 'login' && (
-        <Login onLogin={handleLogin} onNavigateRegister={() => setCurrentView('register')} />
-      )}
-      
-      {currentView === 'register' && (
-        <Register onRegister={handleLogin} onNavigateLogin={() => setCurrentView('login')} />
-      )}
-      
-      {currentUser?.role === 'user' && (
-        <div className="flex-1 flex flex-col bg-[#F4F7FE]">
-          {currentView === 'home' && (
-            <UserHome 
-              user={currentUser} 
-              onDeposit={() => setCurrentView('deposit')} 
-              onWithdraw={() => setCurrentView('withdraw')}
-              onLogout={handleLogout} 
-            />
-          )}
-          {currentView === 'deposit' && (
-            <DepositForm user={currentUser} onBack={() => setCurrentView('home')} onComplete={() => setCurrentView('history')} />
-          )}
-          {currentView === 'withdraw' && (
-            <WithdrawForm user={currentUser} onBack={() => setCurrentView('home')} onComplete={() => setCurrentView('history')} />
-          )}
-          {currentView === 'history' && (
-            <History user={currentUser} requests={requests} />
-          )}
-          {currentView === 'profile' && (
-            <Profile user={currentUser} onLogout={handleLogout} />
-          )}
-
-          {['home', 'history', 'profile', 'deposit', 'withdraw'].includes(currentView) && (
-            <div className="fixed bottom-0 left-0 right-0 flex justify-center pb-6 px-6 pointer-events-none z-50">
-              <nav className="w-full max-w-sm bg-white/80 backdrop-blur-xl border border-white/20 flex justify-around py-3 px-2 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] pointer-events-auto">
-                <button onClick={() => setCurrentView('home')} className={`flex flex-col items-center flex-1 transition-all duration-300 ${currentView === 'home' ? 'text-blue-600' : 'text-gray-400'}`}>
-                  <div className={`p-2 rounded-2xl transition-all ${currentView === 'home' ? 'bg-blue-50' : ''}`}>
-                    <i className={`fas fa-home text-xl mb-1 ${currentView === 'home' ? 'scale-110' : ''}`}></i>
-                  </div>
-                  <span className={`text-[10px] font-bold uppercase tracking-widest ${currentView === 'home' ? 'opacity-100' : 'opacity-0 h-0'}`}>Accueil</span>
-                </button>
-                <button onClick={() => setCurrentView('history')} className={`flex flex-col items-center flex-1 transition-all duration-300 ${currentView === 'history' ? 'text-blue-600' : 'text-gray-400'}`}>
-                  <div className={`p-2 rounded-2xl transition-all ${currentView === 'history' ? 'bg-blue-50' : ''}`}>
-                    <i className={`fas fa-history text-xl mb-1 ${currentView === 'history' ? 'scale-110' : ''}`}></i>
-                  </div>
-                  <span className={`text-[10px] font-bold uppercase tracking-widest ${currentView === 'history' ? 'opacity-100' : 'opacity-0 h-0'}`}>Historique</span>
-                </button>
-                <button onClick={() => setCurrentView('profile')} className={`flex flex-col items-center flex-1 transition-all duration-300 ${currentView === 'profile' ? 'text-blue-600' : 'text-gray-400'}`}>
-                  <div className={`p-2 rounded-2xl transition-all ${currentView === 'profile' ? 'bg-blue-50' : ''}`}>
-                    <i className={`fas fa-user-circle text-xl mb-1 ${currentView === 'profile' ? 'scale-110' : ''}`}></i>
-                  </div>
-                  <span className={`text-[10px] font-bold uppercase tracking-widest ${currentView === 'profile' ? 'opacity-100' : 'opacity-0 h-0'}`}>Profil</span>
-                </button>
-              </nav>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {currentView === 'login' && (
+          <Login onLogin={handleLogin} onNavigateRegister={() => setCurrentView('register')} />
+        )}
+        
+        {currentView === 'register' && (
+          <Register onRegister={handleLogin} onNavigateLogin={() => setCurrentView('login')} />
+        )}
+        
+        {currentUser?.role === 'user' && (
+          <div className="flex-1 flex flex-col bg-[#F4F7FE] overflow-hidden">
+            <div className="flex-1 overflow-hidden relative flex flex-col">
+              {currentView === 'home' && (
+                <UserHome 
+                  user={currentUser} 
+                  onDeposit={() => setCurrentView('deposit')} 
+                  onWithdraw={() => setCurrentView('withdraw')}
+                  onLogout={handleLogout} 
+                />
+              )}
+              {currentView === 'deposit' && (
+                <DepositForm user={currentUser} onBack={() => setCurrentView('home')} onComplete={() => setCurrentView('history')} />
+              )}
+              {currentView === 'withdraw' && (
+                <WithdrawForm user={currentUser} onBack={() => setCurrentView('home')} onComplete={() => setCurrentView('history')} />
+              )}
+              {currentView === 'history' && (
+                <History user={currentUser} requests={requests} />
+              )}
+              {currentView === 'profile' && (
+                <Profile user={currentUser} onLogout={handleLogout} />
+              )}
             </div>
-          )}
-        </div>
-      )}
 
-      {currentUser?.role === 'admin' && currentView === 'admin' && (
-        <AdminDashboard requests={requests} onLogout={handleLogout} />
-      )}
+            {['home', 'history', 'profile', 'deposit', 'withdraw'].includes(currentView) && (
+              <div className="shrink-0 bg-transparent px-4 pb-6 pt-2 z-50">
+                <nav className="w-full bg-white/95 backdrop-blur-xl border border-white/20 flex justify-around py-2 px-2 rounded-[2rem] shadow-[0_10px_30px_rgba(0,0,0,0.08)]">
+                  <button onClick={() => setCurrentView('home')} className={`flex flex-col items-center flex-1 py-1 transition-all duration-300 ${currentView === 'home' ? 'text-blue-600' : 'text-gray-400'}`}>
+                    <i className={`fas fa-home text-lg mb-0.5 ${currentView === 'home' ? 'scale-110' : ''}`}></i>
+                    <span className={`text-[9px] font-bold uppercase tracking-wider ${currentView === 'home' ? 'opacity-100' : 'opacity-60'}`}>Accueil</span>
+                  </button>
+                  <button onClick={() => setCurrentView('history')} className={`flex flex-col items-center flex-1 py-1 transition-all duration-300 ${currentView === 'history' ? 'text-blue-600' : 'text-gray-400'}`}>
+                    <i className={`fas fa-history text-lg mb-0.5 ${currentView === 'history' ? 'scale-110' : ''}`}></i>
+                    <span className={`text-[9px] font-bold uppercase tracking-wider ${currentView === 'history' ? 'opacity-100' : 'opacity-60'}`}>Historique</span>
+                  </button>
+                  <button onClick={() => setCurrentView('profile')} className={`flex flex-col items-center flex-1 py-1 transition-all duration-300 ${currentView === 'profile' ? 'text-blue-600' : 'text-gray-400'}`}>
+                    <i className={`fas fa-user-circle text-lg mb-0.5 ${currentView === 'profile' ? 'scale-110' : ''}`}></i>
+                    <span className={`text-[9px] font-bold uppercase tracking-wider ${currentView === 'profile' ? 'opacity-100' : 'opacity-60'}`}>Profil</span>
+                  </button>
+                </nav>
+              </div>
+            )}
+          </div>
+        )}
+
+        {currentUser?.role === 'admin' && currentView === 'admin' && (
+          <AdminDashboard requests={requests} onLogout={handleLogout} />
+        )}
+      </div>
     </div>
   );
 };
