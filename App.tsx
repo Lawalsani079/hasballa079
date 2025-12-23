@@ -56,7 +56,6 @@ const App: React.FC = () => {
           changes.forEach(change => {
             if (change.type === 'added') {
               const data = change.doc.data();
-              // On s'assure de passer des chaînes de caractères uniquement
               triggerNotification(String(data.userName), String(data.type), String(data.amount));
             }
           });
@@ -64,25 +63,29 @@ const App: React.FC = () => {
 
         querySnapshot.forEach((doc) => {
           const rawData = doc.data();
-          // Nettoyage strict pour éviter les structures circulaires ou complexes de Firebase
           const cleanData: any = { id: doc.id };
           
-          for (const key in rawData) {
-            const value = rawData[key];
-            if (value && typeof value === 'object') {
-              if (typeof value.toMillis === 'function') {
-                cleanData[key] = value.toMillis();
+          // Sanitization logic to avoid circular structures and complex objects in state
+          Object.keys(rawData).forEach(key => {
+            const val = rawData[key];
+            if (val && typeof val === 'object') {
+              if (typeof val.toMillis === 'function') {
+                cleanData[key] = val.toMillis();
+              } else if (val.seconds !== undefined) { // Fallback for simple timestamp objects
+                cleanData[key] = val.seconds * 1000;
+              } else if (Array.isArray(val)) {
+                cleanData[key] = [...val]; // Shallow copy array
               } else {
-                // Pour les autres objets (comme les refs), on stocke leur représentation textuelle ou on les ignore
-                // Sauf si c'est spécifiquement géré (comme les images base64 qui sont des strings)
-                if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-                  cleanData[key] = value;
+                // If it's a complex object we don't recognize, we stringify or skip to avoid circular issues
+                // For TransactionRequest fields, we expect strings/numbers mostly
+                if (['amount', 'bookmakerId', 'withdrawCode', 'userName', 'userPhone', 'method', 'bookmaker', 'status', 'type', 'proofImage'].includes(key)) {
+                  cleanData[key] = String(val);
                 }
               }
             } else {
-              cleanData[key] = value;
+              cleanData[key] = val;
             }
-          }
+          });
           reqs.push(cleanData as TransactionRequest);
         });
 
@@ -108,7 +111,7 @@ const App: React.FC = () => {
   }, []);
 
   const handleLogin = (user: User) => {
-    // On crée une copie propre de l'objet utilisateur pour éviter les structures circulaires
+    // Ensure the user object is a plain object without circular refs
     setCurrentUser({
       id: String(user.id),
       name: String(user.name),
@@ -125,7 +128,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-white shadow-xl relative overflow-hidden flex flex-col">
+    <div className="max-w-md mx-auto min-h-screen bg-white shadow-xl relative overflow-hidden flex flex-col font-['Poppins']">
       {currentView === 'splash' && <SplashScreen />}
       
       {isPlaceholderConfig && currentView !== 'splash' && (
@@ -149,7 +152,7 @@ const App: React.FC = () => {
       )}
       
       {currentUser?.role === 'user' && (
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col bg-[#F4F7FE]">
           {currentView === 'home' && (
             <UserHome 
               user={currentUser} 
@@ -172,20 +175,28 @@ const App: React.FC = () => {
           )}
 
           {['home', 'history', 'profile', 'deposit', 'withdraw'].includes(currentView) && (
-            <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-100 flex justify-around py-3 pb-6 z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-              <button onClick={() => setCurrentView('home')} className={`flex flex-col items-center transition-colors ${currentView === 'home' ? 'text-blue-600 font-bold' : 'text-gray-400'}`}>
-                <i className="fas fa-home text-xl mb-1"></i>
-                <span className="text-[10px]">Accueil</span>
-              </button>
-              <button onClick={() => setCurrentView('history')} className={`flex flex-col items-center transition-colors ${currentView === 'history' ? 'text-blue-600 font-bold' : 'text-gray-400'}`}>
-                <i className="fas fa-history text-xl mb-1"></i>
-                <span className="text-[10px]">Historique</span>
-              </button>
-              <button onClick={() => setCurrentView('profile')} className={`flex flex-col items-center transition-colors ${currentView === 'profile' ? 'text-blue-600 font-bold' : 'text-gray-400'}`}>
-                <i className="fas fa-user text-xl mb-1"></i>
-                <span className="text-[10px]">Profil</span>
-              </button>
-            </nav>
+            <div className="fixed bottom-0 left-0 right-0 flex justify-center pb-6 px-6 pointer-events-none z-50">
+              <nav className="w-full max-w-sm bg-white/80 backdrop-blur-xl border border-white/20 flex justify-around py-3 px-2 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] pointer-events-auto">
+                <button onClick={() => setCurrentView('home')} className={`flex flex-col items-center flex-1 transition-all duration-300 ${currentView === 'home' ? 'text-blue-600' : 'text-gray-400'}`}>
+                  <div className={`p-2 rounded-2xl transition-all ${currentView === 'home' ? 'bg-blue-50' : ''}`}>
+                    <i className={`fas fa-home text-xl mb-1 ${currentView === 'home' ? 'scale-110' : ''}`}></i>
+                  </div>
+                  <span className={`text-[10px] font-bold uppercase tracking-widest ${currentView === 'home' ? 'opacity-100' : 'opacity-0 h-0'}`}>Accueil</span>
+                </button>
+                <button onClick={() => setCurrentView('history')} className={`flex flex-col items-center flex-1 transition-all duration-300 ${currentView === 'history' ? 'text-blue-600' : 'text-gray-400'}`}>
+                  <div className={`p-2 rounded-2xl transition-all ${currentView === 'history' ? 'bg-blue-50' : ''}`}>
+                    <i className={`fas fa-history text-xl mb-1 ${currentView === 'history' ? 'scale-110' : ''}`}></i>
+                  </div>
+                  <span className={`text-[10px] font-bold uppercase tracking-widest ${currentView === 'history' ? 'opacity-100' : 'opacity-0 h-0'}`}>Historique</span>
+                </button>
+                <button onClick={() => setCurrentView('profile')} className={`flex flex-col items-center flex-1 transition-all duration-300 ${currentView === 'profile' ? 'text-blue-600' : 'text-gray-400'}`}>
+                  <div className={`p-2 rounded-2xl transition-all ${currentView === 'profile' ? 'bg-blue-50' : ''}`}>
+                    <i className={`fas fa-user-circle text-xl mb-1 ${currentView === 'profile' ? 'scale-110' : ''}`}></i>
+                  </div>
+                  <span className={`text-[10px] font-bold uppercase tracking-widest ${currentView === 'profile' ? 'opacity-100' : 'opacity-0 h-0'}`}>Profil</span>
+                </button>
+              </nav>
+            </div>
           )}
         </div>
       )}

@@ -22,28 +22,29 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateRegister }) => {
     setError('');
     setLoading(true);
 
+    const cleanUser = username.trim().toLowerCase();
+    const cleanPass = password.trim();
+
     try {
       if (isAdminMode) {
-        if (username.trim() === ADMIN_CREDENTIALS.id && password === ADMIN_CREDENTIALS.password) {
-          onLogin({ id: 'admin-1', name: 'Administrateur', phone: '000', role: 'admin' });
+        if (cleanUser === ADMIN_CREDENTIALS.id && cleanPass === ADMIN_CREDENTIALS.password) {
+          onLogin({ id: 'admin-1', name: 'Champion Admin', phone: '000', role: 'admin' });
         } else {
           setError('Identifiants admin incorrects');
         }
       } else {
-        if (!username || !password) {
+        if (!cleanUser || !cleanPass) {
           setError('Veuillez remplir tous les champs');
           setLoading(false);
           return;
         }
 
-        const q = query(collection(db, "users"), where("name", "==", username), where("password", "==", password));
+        const q = query(collection(db, "users"), where("name", "==", username.trim()), where("password", "==", cleanPass));
         const querySnapshot = await getDocs(q);
         
         if (!querySnapshot.empty) {
           const doc = querySnapshot.docs[0];
           const userData = doc.data();
-          
-          // Nettoyage pour éviter toute référence circulaire
           onLogin({ 
             id: doc.id, 
             name: String(userData.name),
@@ -55,73 +56,84 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateRegister }) => {
         }
       }
     } catch (err: any) {
-      console.error("Login error message:", err.message);
-      setError(err.code === 'permission-denied' 
-        ? 'Erreur Firebase : Permission refusée sur le projet' 
-        : 'Erreur de connexion : ' + err.message);
+      setError('Erreur réseau. Réessayez.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex-1 p-6 flex flex-col">
+    <div className="flex-1 p-6 flex flex-col bg-[#F4F7FE]">
       <div className="flex flex-col items-center mt-12 mb-12">
-        <div className="w-24 h-24 bg-blue-600 rounded-3xl rotate-45 transform flex items-center justify-center mb-10 shadow-xl shadow-blue-200 transition-transform active:scale-95">
+        <div className="w-24 h-24 bg-blue-600 rounded-3xl rotate-45 transform flex items-center justify-center mb-8 shadow-xl shadow-blue-200">
            <div className="rotate-[-45deg] flex items-baseline">
              <span className="text-white text-4xl font-black italic">R</span>
              <span className="text-yellow-400 text-xl font-bold">+</span>
            </div>
         </div>
-        <h2 className="text-2xl font-bold text-blue-900">Recharge+</h2>
-        <p className="text-gray-500 text-center mt-2 px-6">Accédez à votre espace sécurisé</p>
+        <h2 className="text-2xl font-black text-blue-900 tracking-tight uppercase">Recharge+</h2>
+        <p className="text-center mt-2 px-6 text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-relaxed">
+          {isAdminMode ? 'PANNEAU D\'ADMINISTRATION SÉCURISÉ' : 'VOTRE PLATEFORME DE RECHARGE RAPIDE'}
+        </p>
       </div>
 
-      <div className="bg-blue-50/50 p-6 rounded-[2.5rem] border border-blue-100 shadow-inner">
-        <div className="flex bg-white p-1 rounded-2xl mb-8 shadow-sm">
-          <button onClick={() => setIsAdminMode(false)} className={`flex-1 py-3 rounded-xl flex items-center justify-center gap-2 transition-all ${!isAdminMode ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400'}`}>
-            <i className="fas fa-user text-sm"></i>
-            <span className="font-semibold text-sm">Client</span>
+      <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-xl shadow-blue-900/5">
+        <div className="flex p-1 bg-gray-50 rounded-2xl mb-8">
+          <button onClick={() => { setIsAdminMode(false); setError(''); }} className={`flex-1 py-3 rounded-xl flex items-center justify-center gap-2 transition-all ${!isAdminMode ? 'bg-white text-blue-600 shadow-md font-black' : 'text-gray-400 font-bold'}`}>
+            <i className="fas fa-user text-xs"></i>
+            <span className="text-[10px] uppercase tracking-widest">Client</span>
           </button>
-          <button onClick={() => setIsAdminMode(true)} className={`flex-1 py-3 rounded-xl flex items-center justify-center gap-2 transition-all ${isAdminMode ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400'}`}>
-            <i className="fas fa-shield-alt text-sm"></i>
-            <span className="font-semibold text-sm">Admin</span>
+          <button onClick={() => { setIsAdminMode(true); setError(''); }} className={`flex-1 py-3 rounded-xl flex items-center justify-center gap-2 transition-all ${isAdminMode ? 'bg-white text-blue-600 shadow-md font-black' : 'text-gray-400 font-bold'}`}>
+            <i className="fas fa-shield-alt text-xs"></i>
+            <span className="text-[10px] uppercase tracking-widest">Admin</span>
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-300"><i className={`fas ${isAdminMode ? 'fa-envelope' : 'fa-user'}`}></i></span>
-            <input 
-              type={isAdminMode ? "email" : "text"} 
-              value={username} 
-              onChange={e => setUsername(e.target.value)} 
-              placeholder={isAdminMode ? "champion@gmail.com" : "Nom complet"} 
-              className="w-full bg-white py-4 pl-12 pr-4 rounded-2xl shadow-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all" 
-              disabled={loading} 
-            />
+          <div className="space-y-1">
+            <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest px-2">Identifiant</label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-300">
+                <i className={`fas ${isAdminMode ? 'fa-id-badge' : 'fa-user'}`}></i>
+              </span>
+              <input 
+                type="text" 
+                value={username} 
+                onChange={e => setUsername(e.target.value)} 
+                placeholder={isAdminMode ? "champion" : "Nom d'utilisateur"} 
+                className="w-full py-4 pl-12 pr-4 bg-gray-50 text-blue-900 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold transition-all" 
+                disabled={loading} 
+              />
+            </div>
           </div>
 
-          <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-300"><i className="fas fa-lock"></i></span>
-            <input 
-              type="password" 
-              value={password} 
-              onChange={e => setPassword(e.target.value)} 
-              placeholder="Mot de passe" 
-              className="w-full bg-white py-4 pl-12 pr-4 rounded-2xl shadow-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all" 
-              disabled={loading} 
-            />
+          <div className="space-y-1">
+            <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest px-2">Mot de passe</label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-300">
+                <i className="fas fa-lock"></i>
+              </span>
+              <input 
+                type="password" 
+                value={password} 
+                onChange={e => setPassword(e.target.value)} 
+                placeholder="••••••••" 
+                className="w-full py-4 pl-12 pr-4 bg-gray-50 text-blue-900 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold transition-all" 
+                disabled={loading} 
+              />
+            </div>
           </div>
 
-          {error && <div className="p-3 bg-red-100 border border-red-200 rounded-xl"><p className="text-red-600 text-center text-xs font-bold">{error}</p></div>}
+          {error && <p className="text-red-500 text-center text-[10px] font-black uppercase tracking-widest bg-red-50 py-3 rounded-xl border border-red-100">{error}</p>}
 
-          <button type="submit" disabled={loading} className="w-full bg-yellow-400 text-blue-900 font-black py-4 rounded-2xl shadow-lg hover:bg-yellow-500 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50">
-            {loading ? <i className="fas fa-circle-notch animate-spin"></i> : 'CONNEXION'}
+          <button type="submit" disabled={loading} className="w-full bg-yellow-400 text-blue-900 font-black py-5 rounded-[2rem] shadow-lg shadow-yellow-900/10 active:scale-95 disabled:opacity-50 uppercase tracking-[0.2em] text-xs">
+            {loading ? <i className="fas fa-circle-notch animate-spin"></i> : 'SE CONNECTER'}
           </button>
 
           {!isAdminMode && (
-            <p className="text-center text-sm text-gray-500 mt-4">Nouveau ? <button type="button" onClick={onNavigateRegister} className="text-blue-600 font-bold underline decoration-2 underline-offset-4">S'inscrire</button></p>
+            <p className="text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-4">
+              Pas de compte ? <button type="button" onClick={onNavigateRegister} className="text-blue-600 font-black ml-1">S'inscrire</button>
+            </p>
           )}
         </form>
       </div>

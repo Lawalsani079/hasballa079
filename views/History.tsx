@@ -1,5 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
+import { doc, deleteDoc, writeBatch, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { db } from '../firebaseConfig';
 import { User, TransactionRequest, RequestStatus, RequestType } from '../types';
 
 interface HistoryProps {
@@ -13,6 +15,8 @@ const History: React.FC<HistoryProps> = ({ user, requests }) => {
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const filteredRequests = useMemo(() => {
     return requests
@@ -33,10 +37,48 @@ const History: React.FC<HistoryProps> = ({ user, requests }) => {
       });
   }, [requests, user.id, filterType, filterStatus, startDate, endDate]);
 
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!window.confirm("Supprimer cette transaction de votre historique ?")) return;
+    setDeletingId(id);
+    try {
+      await deleteDoc(doc(db, "requests", id));
+    } catch (err: any) {
+      alert("Erreur lors de la suppression");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (!window.confirm("Voulez-vous supprimer TOUTES vos transactions archivées ? Cette action est irréversible.")) return;
+    setDeleting(true);
+    try {
+      const q = query(collection(db, "requests"), where("userId", "==", user.id));
+      const snapshot = await getDocs(q);
+      const batch = writeBatch(db);
+      let count = 0;
+      snapshot.forEach(doc => {
+        if (doc.data().status !== 'En attente') {
+          batch.delete(doc.ref);
+          count++;
+        }
+      });
+      if (count > 0) {
+        await batch.commit();
+        alert(`${count} transactions supprimées de votre historique.`);
+      } else {
+        alert("Rien à supprimer.");
+      }
+    } catch (err: any) {
+      alert("Erreur: " + err.message);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const filterSummary = useMemo(() => {
     let summaryParts: string[] = [];
-
-    // Type and Status
     if (filterType === 'All' && filterStatus === 'All') {
       summaryParts.push('Toutes les transactions');
     } else {
@@ -44,162 +86,109 @@ const History: React.FC<HistoryProps> = ({ user, requests }) => {
       const statusStr = filterStatus === 'All' ? '' : filterStatus.toLowerCase() + 's';
       summaryParts.push(`${typeStr} ${statusStr}`.trim());
     }
-
-    // Dates
-    if (startDate && endDate) {
-      const start = new Date(startDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-      const end = new Date(endDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-      summaryParts.push(`du ${start} au ${end}`);
-    } else if (startDate) {
-      const start = new Date(startDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-      summaryParts.push(`depuis le ${start}`);
-    } else if (endDate) {
-      const end = new Date(endDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-      summaryParts.push(`jusqu'au ${end}`);
-    }
-
     return summaryParts.join(' ');
-  }, [filterType, filterStatus, startDate, endDate]);
+  }, [filterType, filterStatus]);
 
-  const getStatusColor = (status: string) => {
+  const getStatusStyle = (status: string) => {
     switch (status) {
-      case 'Validé': return 'bg-green-100 text-green-700';
-      case 'Rejeté': return 'bg-red-100 text-red-700';
-      default: return 'bg-blue-100 text-blue-700';
+      case 'Validé': return 'bg-green-500 text-white shadow-green-100';
+      case 'Rejeté': return 'bg-red-500 text-white shadow-red-100';
+      default: return 'bg-blue-600 text-white shadow-blue-100';
     }
   };
-
-  const clearFilters = () => {
-    setFilterType('All');
-    setFilterStatus('All');
-    setStartDate('');
-    setEndDate('');
-  };
-
-  const activeFiltersCount = [
-    filterType !== 'All',
-    filterStatus !== 'All',
-    startDate !== '',
-    endDate !== ''
-  ].filter(Boolean).length;
 
   return (
-    <div className="flex-1 bg-blue-900 overflow-y-auto pb-24">
+    <div className="flex-1 bg-[#F4F7FE] overflow-y-auto pb-32">
        <div className="p-6">
          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-white">Historique</h2>
-            <button 
-              onClick={() => setShowFilters(!showFilters)}
-              className={`relative p-3 rounded-2xl transition-all ${showFilters ? 'bg-yellow-400 text-blue-900' : 'bg-white/10 text-white'}`}
-            >
-              <i className="fas fa-filter"></i>
-              {activeFiltersCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold border-2 border-blue-900">
-                  {activeFiltersCount}
-                </span>
-              )}
-            </button>
+            <div>
+              <h2 className="text-2xl font-black text-blue-900 tracking-tight">Historique</h2>
+              <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">{filteredRequests.length} opérations</p>
+            </div>
+            <div className="flex gap-2">
+              <button 
+                onClick={handleClearAll}
+                disabled={deleting}
+                className="w-10 h-10 bg-white text-red-500 rounded-xl shadow-lg flex items-center justify-center active:scale-90 border border-red-50"
+              >
+                <i className={`fas ${deleting ? 'fa-circle-notch animate-spin' : 'fa-trash-alt'}`}></i>
+              </button>
+              <button 
+                onClick={() => setShowFilters(!showFilters)}
+                className={`relative w-10 h-10 rounded-xl transition-all shadow-lg flex items-center justify-center ${showFilters ? 'bg-blue-600 text-white shadow-blue-200' : 'bg-white text-blue-900'}`}
+              >
+                <i className="fas fa-sliders-h"></i>
+              </button>
+            </div>
          </div>
 
-         {/* Filter Panel */}
          {showFilters && (
-           <div className="bg-white rounded-[2rem] p-6 mb-6 shadow-2xl animate-in slide-in-from-top-4 duration-300">
-             <div className="flex justify-between items-center mb-4">
-               <h3 className="font-bold text-blue-900 text-sm">Filtres</h3>
-               <button onClick={clearFilters} className="text-blue-600 text-xs font-bold underline">Réinitialiser</button>
-             </div>
-
-             <div className="space-y-4">
-               {/* Type Filter */}
+           <div className="bg-white rounded-[2rem] p-6 mb-6 shadow-2xl shadow-blue-900/5 animate-in slide-in-from-top-4 duration-300">
+             <div className="space-y-6">
                <div>
-                 <p className="text-[10px] font-black text-gray-400 uppercase mb-2">Type de transaction</p>
+                 <p className="text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest px-2">Filtrer par Type</p>
                  <div className="flex gap-2">
                    {['All', 'Dépôt', 'Retrait'].map((t) => (
-                     <button
-                       key={t}
-                       onClick={() => setFilterType(t as any)}
-                       className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${filterType === t ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-400'}`}
-                     >
+                     <button key={t} onClick={() => setFilterType(t as any)} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filterType === t ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-50 text-gray-400'}`}>
                        {t === 'All' ? 'Tous' : t}
                      </button>
                    ))}
                  </div>
                </div>
-
-               {/* Status Filter */}
                <div>
-                 <p className="text-[10px] font-black text-gray-400 uppercase mb-2">Statut</p>
-                 <div className="flex flex-wrap gap-2">
+                 <p className="text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest px-2">Filtrer par Statut</p>
+                 <div className="grid grid-cols-2 gap-2">
                    {['All', 'En attente', 'Validé', 'Rejeté'].map((s) => (
-                     <button
-                       key={s}
-                       onClick={() => setFilterStatus(s as any)}
-                       className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${filterStatus === s ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-400'}`}
-                     >
+                     <button key={s} onClick={() => setFilterStatus(s as any)} className={`py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filterStatus === s ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-50 text-gray-400'}`}>
                        {s === 'All' ? 'Tous' : s}
                      </button>
                    ))}
-                 </div>
-               </div>
-
-               {/* Date Range */}
-               <div className="grid grid-cols-2 gap-3">
-                 <div>
-                   <p className="text-[10px] font-black text-gray-400 uppercase mb-2">Du</p>
-                   <input 
-                     type="date" 
-                     className="w-full bg-gray-50 p-3 rounded-xl text-xs border-none outline-none focus:ring-2 focus:ring-blue-500" 
-                     value={startDate}
-                     onChange={(e) => setStartDate(e.target.value)}
-                   />
-                 </div>
-                 <div>
-                   <p className="text-[10px] font-black text-gray-400 uppercase mb-2">Au</p>
-                   <input 
-                     type="date" 
-                     className="w-full bg-gray-50 p-3 rounded-xl text-xs border-none outline-none focus:ring-2 focus:ring-blue-500" 
-                     value={endDate}
-                     onChange={(e) => setEndDate(e.target.value)}
-                   />
                  </div>
                </div>
              </div>
            </div>
          )}
 
-         {/* Filter Summary Text */}
-         <div className="px-1 mb-4">
-           <p className="text-blue-300/80 text-[11px] font-medium flex items-center gap-2">
-             <i className="fas fa-info-circle opacity-50"></i>
-             <span className="first-letter:uppercase">{filterSummary}</span>
+         <div className="px-2 mb-4">
+           <p className="text-blue-600/60 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+             <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
+             {filterSummary}
            </p>
          </div>
          
          {filteredRequests.length === 0 ? (
-           <div className="bg-white/10 rounded-[2rem] p-10 flex flex-col items-center justify-center text-center">
-              <div className="w-20 h-20 bg-blue-800/50 rounded-full flex items-center justify-center text-blue-300 text-3xl mb-4">
-                <i className="fas fa-search"></i>
-              </div>
-              <h3 className="text-white font-bold text-lg">Aucun résultat</h3>
-              <p className="text-blue-300/70 text-sm mt-2">Essayez de modifier vos filtres pour voir plus de transactions.</p>
+           <div className="bg-white rounded-[2.5rem] p-12 flex flex-col items-center justify-center text-center shadow-sm mt-4">
+              <i className="fas fa-folder-open text-blue-100 text-4xl mb-4"></i>
+              <h3 className="text-blue-900 font-black text-sm uppercase tracking-widest">Historique vide</h3>
            </div>
          ) : (
-           <div className="space-y-4">
+           <div className="space-y-3">
              {filteredRequests.map((req) => (
-               <div key={req.id} className="bg-white rounded-3xl p-5 shadow-xl flex items-center justify-between border-l-4 border-transparent hover:border-blue-400 transition-all active:scale-[0.98]">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl ${req.type === 'Dépôt' ? 'bg-sky-100 text-sky-600' : 'bg-orange-100 text-orange-600'}`}>
+               <div key={req.id} className="bg-white rounded-3xl p-5 shadow-sm border border-gray-50 flex items-center justify-between active:scale-[0.98] transition-all group">
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-lg ${req.type === 'Dépôt' ? 'bg-blue-50 text-blue-600' : 'bg-orange-50 text-orange-500'}`}>
                       <i className={`fas ${req.type === 'Dépôt' ? 'fa-arrow-down' : 'fa-arrow-up'}`}></i>
                     </div>
                     <div>
-                      <h4 className="font-bold text-blue-900 text-sm">{req.type} {req.bookmaker}</h4>
-                      <p className="text-gray-400 text-[10px] font-medium">
-                        {new Date(req.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })} • {req.amount} FCFA
+                      <h4 className="font-black text-blue-900 text-sm uppercase tracking-tight">{req.type} {req.bookmaker}</h4>
+                      <p className="text-gray-400 text-[9px] font-black uppercase tracking-widest mt-1">
+                        {new Date(req.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} • <span className="text-blue-600 font-black">{req.amount} F</span>
                       </p>
                     </div>
                   </div>
-                  <div className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tighter ${getStatusColor(req.status)}`}>
-                    {req.status}
+                  <div className="flex flex-col items-end gap-2">
+                    <div className={`px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest shadow-sm ${getStatusStyle(req.status)}`}>
+                      {req.status}
+                    </div>
+                    {req.status !== 'En attente' && (
+                      <button 
+                        onClick={(e) => handleDelete(e, req.id)}
+                        disabled={deletingId === req.id}
+                        className="text-gray-200 hover:text-red-500 transition-colors"
+                      >
+                        {deletingId === req.id ? <i className="fas fa-circle-notch animate-spin"></i> : <i className="fas fa-trash-alt text-[10px]"></i>}
+                      </button>
+                    )}
                   </div>
                </div>
              ))}
