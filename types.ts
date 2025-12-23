@@ -19,6 +19,7 @@ export interface TransactionRequest {
   method: string;
   bookmaker: string;
   bookmakerId: string;
+  withdrawCode?: string;
   proofImage?: string;
   status: RequestStatus;
   createdAt: number;

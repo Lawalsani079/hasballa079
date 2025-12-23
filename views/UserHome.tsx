@@ -6,10 +6,11 @@ import { User } from '../types';
 interface UserHomeProps {
   user: User;
   onDeposit: () => void;
+  onWithdraw: () => void;
   onLogout: () => void;
 }
 
-const UserHome: React.FC<UserHomeProps> = ({ user, onDeposit, onLogout }) => {
+const UserHome: React.FC<UserHomeProps> = ({ user, onDeposit, onWithdraw, onLogout }) => {
   return (
     <div className="flex-1 bg-blue-900 overflow-y-auto pb-24">
       {/* Header */}
@@ -58,6 +59,7 @@ const UserHome: React.FC<UserHomeProps> = ({ user, onDeposit, onLogout }) => {
 
           {/* Withdraw Button */}
           <button 
+            onClick={onWithdraw}
             className="w-full bg-[#f97316] hover:bg-[#ea580c] p-5 rounded-[2rem] flex items-center gap-5 group transition-all"
           >
             <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center text-white text-2xl group-hover:scale-110 transition-transform">
