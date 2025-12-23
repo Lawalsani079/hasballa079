@@ -1,0 +1,7 @@
+{
+  "name": "Recharge+",
+  "description": "Une application mobile moderne pour les dépôts et retraits de bookmakers avec une interface d'administration temps réel.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
