@@ -1,12 +1,16 @@
 
 export type RequestStatus = 'En attente' | 'Validé' | 'Rejeté';
-export type RequestType = 'Dépôt' | 'Retrait';
+export type RequestType = 'Dépôt' | 'Retrait' | 'Crypto';
 
 export interface User {
   id: string;
   name: string;
   phone: string;
   role: 'user' | 'admin';
+  referralCode: string;
+  referredBy?: string;
+  referralBalance: number;
+  lastActive: number;
 }
 
 export interface TransactionRequest {
@@ -17,9 +21,11 @@ export interface TransactionRequest {
   type: RequestType;
   amount: string;
   method: string;
-  bookmaker: string;
-  bookmakerId: string;
+  bookmaker?: string;
+  bookmakerId?: string;
   withdrawCode?: string;
+  cryptoType?: string;
+  walletAddress?: string;
   proofImage?: string;
   status: RequestStatus;
   createdAt: number;

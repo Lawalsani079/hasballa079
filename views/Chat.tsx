@@ -50,7 +50,7 @@ const Chat: React.FC<ChatProps> = ({ user, messages, onBack, targetUserId, targe
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-[#F4F7FE] h-full overflow-hidden">
+    <div className="flex-1 flex flex-col bg-[#F8FAFC] h-full overflow-hidden">
       {/* Header */}
       <div className="bg-white px-6 pt-12 pb-4 flex items-center gap-4 shadow-sm z-10">
         <button onClick={onBack} className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-blue-900 active:scale-90 transition-all">

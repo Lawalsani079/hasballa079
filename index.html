@@ -16,36 +16,33 @@
 
         html, body {
             font-family: 'Poppins', sans-serif;
-            background-color: #F4F7FE;
+            background-color: #081a2b;
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
-            overflow: hidden; /* Empêche le scroll du body pour un feeling app */
-            overscroll-behavior-y: none; /* Désactive le pull-to-refresh du navigateur */
+            overflow: hidden;
+            overscroll-behavior-y: none;
             -webkit-tap-highlight-color: transparent;
             -webkit-user-select: none;
             user-select: none;
         }
 
         #root {
-            height: 100dvh; /* Utilise la hauteur dynamique (prend en compte l'UI du navigateur) */
+            height: 100dvh;
             display: flex;
             flex-direction: column;
         }
 
-        /* Amélioration des inputs sur Android */
         input, select, textarea {
-            font-size: 16px !important; /* Évite le zoom automatique sur focus iOS/Android */
+            font-size: 16px !important;
             -webkit-user-select: text;
             user-select: text;
         }
 
-        /* Transition fluide entre les vues */
         .fade-enter { opacity: 0; }
         .fade-enter-active { opacity: 1; transition: opacity 300ms ease-in; }
 
-        /* Barre de scroll plus fine pour Android */
         ::-webkit-scrollbar {
             width: 4px;
         }
@@ -53,7 +50,7 @@
             background: transparent;
         }
         ::-webkit-scrollbar-thumb {
-            background: rgba(0,0,0,0.1);
+            background: rgba(255,255,255,0.1);
             border-radius: 10px;
         }
     </style>
@@ -67,7 +64,7 @@
 }
 </script>
 </head>
-<body class="text-gray-900">
+<body class="text-white">
     <div id="root"></div>
 </body>
 </html>
