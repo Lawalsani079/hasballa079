@@ -18,15 +18,16 @@ const WithdrawForm: React.FC<WithdrawFormProps> = ({ user, onBack, onComplete })
     amount: '', 
     method: '', 
     bookmaker: '', 
-    bookmakerId: '', 
+    bookmakerId: '', // Gardé pour la structure mais peu utilisé pour le retrait selon la demande
     withdrawCode: '',
     proofImage: '' 
   });
   const [error, setError] = useState('');
 
   const handleNext = () => {
-    if (!formData.amount || !formData.method || !formData.bookmaker || formData.bookmakerId.length < 5) {
-      setError('Veuillez remplir tous les champs correctement.');
+    // Validation mise à jour pour inclure le code de retrait à la place de l'ID
+    if (!formData.amount || !formData.method || !formData.bookmaker || formData.withdrawCode.length < 4) {
+      setError('Veuillez remplir tous les champs (Montant, Bookmaker, Méthode et Code).');
       return;
     }
     setError('');
@@ -43,10 +44,6 @@ const WithdrawForm: React.FC<WithdrawFormProps> = ({ user, onBack, onComplete })
   };
 
   const handleSubmit = async () => {
-    if (!formData.withdrawCode) {
-      setError('Le code de retrait est obligatoire');
-      return;
-    }
     setLoading(true);
     try {
       await addDoc(collection(db, "requests"), {
@@ -78,7 +75,7 @@ const WithdrawForm: React.FC<WithdrawFormProps> = ({ user, onBack, onComplete })
         
         <h2 className="text-2xl font-black text-blue-900 text-center mb-3 uppercase tracking-tight">Retrait Envoyé !</h2>
         <p className="text-gray-500 text-center text-sm mb-12 leading-relaxed max-w-[250px]">
-          Votre demande de retrait de <span className="font-bold text-blue-900">{formData.amount} FCFA</span> est en attente de validation.
+          Votre demande de retrait de <span className="font-bold text-blue-900">{formData.amount} FCFA</span> avec le code <span className="font-bold text-blue-600">{formData.withdrawCode}</span> est en attente.
         </p>
 
         <div className="w-full space-y-4 max-w-xs">
@@ -101,7 +98,7 @@ const WithdrawForm: React.FC<WithdrawFormProps> = ({ user, onBack, onComplete })
 
   return (
     <div className="flex-1 bg-[#F4F7FE] flex flex-col overflow-hidden">
-      {/* Dynamic Header */}
+      {/* Header Dynamique */}
       <div className="bg-white px-6 pt-12 pb-6 flex items-center justify-between shadow-sm">
         <button onClick={step === 1 ? onBack : () => setStep(1)} className="w-10 h-10 flex items-center justify-center bg-gray-50 rounded-xl text-blue-900 active:scale-90 transition-all">
           <i className={`fas ${step === 1 ? 'fa-times' : 'fa-chevron-left'}`}></i>
@@ -175,18 +172,17 @@ const WithdrawForm: React.FC<WithdrawFormProps> = ({ user, onBack, onComplete })
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Mon ID Joueur</label>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Code de retrait</label>
                 <div className="relative group">
                   <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-yellow-500 transition-colors">
-                    <i className="fas fa-user-tag"></i>
+                    <i className="fas fa-key"></i>
                   </div>
                   <input 
                     type="text" 
-                    maxLength={11} 
-                    placeholder="Votre ID joueur" 
-                    className="w-full bg-white py-4 pl-12 pr-4 rounded-2xl outline-none border border-gray-100 focus:border-yellow-400 focus:ring-4 focus:ring-yellow-400/5 font-bold text-blue-900 transition-all" 
-                    value={formData.bookmakerId} 
-                    onChange={e => setFormData({...formData, bookmakerId: e.target.value.replace(/\D/g, '')})} 
+                    placeholder="Entrez votre code de retrait" 
+                    className="w-full bg-white py-4 pl-12 pr-4 rounded-2xl outline-none border border-gray-100 focus:border-yellow-400 focus:ring-4 focus:ring-yellow-400/5 font-black text-blue-900 transition-all uppercase tracking-widest" 
+                    value={formData.withdrawCode} 
+                    onChange={e => setFormData({...formData, withdrawCode: e.target.value.toUpperCase()})} 
                   />
                 </div>
               </div>
@@ -205,14 +201,10 @@ const WithdrawForm: React.FC<WithdrawFormProps> = ({ user, onBack, onComplete })
           <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
             <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm space-y-6">
               <div className="text-center space-y-2">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Code de retrait bookmaker</p>
-                <input 
-                  type="text" 
-                  placeholder="EX: 48J7K2" 
-                  className="w-full bg-gray-50 py-6 px-4 rounded-2xl outline-none border border-dashed border-gray-200 focus:border-yellow-400 font-black text-blue-900 text-3xl text-center uppercase tracking-widest transition-all" 
-                  value={formData.withdrawCode} 
-                  onChange={e => setFormData({...formData, withdrawCode: e.target.value.toUpperCase()})} 
-                />
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Confirmation du Code</p>
+                <div className="w-full bg-gray-50 py-6 px-4 rounded-2xl border border-dashed border-gray-200 font-black text-blue-900 text-3xl text-center uppercase tracking-widest">
+                  {formData.withdrawCode}
+                </div>
               </div>
 
               <div className="pt-4 border-t border-gray-50 space-y-3">
@@ -223,6 +215,10 @@ const WithdrawForm: React.FC<WithdrawFormProps> = ({ user, onBack, onComplete })
                  <div className="flex justify-between">
                    <span className="text-gray-400 text-[9px] font-bold uppercase tracking-widest">Montant brut</span>
                    <span className="text-blue-900 font-black text-xs">{formData.amount} FCFA</span>
+                 </div>
+                 <div className="flex justify-between">
+                   <span className="text-gray-400 text-[9px] font-bold uppercase tracking-widest">Bookmaker</span>
+                   <span className="text-blue-900 font-black text-xs uppercase">{formData.bookmaker}</span>
                  </div>
               </div>
             </div>

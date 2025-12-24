@@ -46,9 +46,13 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setCurrentView('login');
-    }, 2500);
+    // FIX: Le timer ne doit se lancer QUE si on est sur le splash screen au démarrage
+    let splashTimer: number | undefined;
+    if (currentView === 'splash') {
+      splashTimer = window.setTimeout(() => {
+        setCurrentView('login');
+      }, 2500);
+    }
 
     let unsubRequests = () => {};
     let unsubMessages = () => {};
@@ -89,7 +93,7 @@ const App: React.FC = () => {
     } catch (err) {}
 
     return () => {
-      clearTimeout(timer);
+      if (splashTimer) clearTimeout(splashTimer);
       unsubRequests();
       unsubMessages();
     };
