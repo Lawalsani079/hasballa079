@@ -8,9 +8,10 @@ interface UserHomeProps {
   onDeposit: () => void;
   onWithdraw: () => void;
   onLogout: () => void;
+  onChat: () => void;
 }
 
-const UserHome: React.FC<UserHomeProps> = ({ user, onDeposit, onWithdraw, onLogout }) => {
+const UserHome: React.FC<UserHomeProps> = ({ user, onDeposit, onWithdraw, onLogout, onChat }) => {
   return (
     <div className="flex-1 bg-white overflow-y-auto pb-32">
       {/* Header compact */}
@@ -29,39 +30,24 @@ const UserHome: React.FC<UserHomeProps> = ({ user, onDeposit, onWithdraw, onLogo
         </button>
       </div>
 
-      {/* Bannière en pleine largeur au sommet */}
       <div className="w-full">
          <Banner />
       </div>
 
       <div className="px-6 flex flex-col items-center mt-8">
-        {/* Boutons empilés comme la maquette */}
         <div className="w-full space-y-4 max-w-xs mb-10">
-          <button 
-            onClick={onDeposit}
-            className="w-full bg-[#1d4ed8] text-white font-black py-5 rounded-full shadow-lg shadow-blue-200 active:scale-95 transition-all text-sm uppercase tracking-widest"
-          >
-            Dépôt
-          </button>
-
-          <button 
-            onClick={onWithdraw}
-            className="w-full bg-[#facc15] text-blue-900 font-black py-5 rounded-full shadow-lg shadow-yellow-100 active:scale-95 transition-all text-sm uppercase tracking-widest"
-          >
-            Retrait
-          </button>
+          <button onClick={onDeposit} className="w-full bg-[#1d4ed8] text-white font-black py-5 rounded-full shadow-lg active:scale-95 transition-all text-sm uppercase tracking-widest">Dépôt</button>
+          <button onClick={onWithdraw} className="w-full bg-[#facc15] text-blue-900 font-black py-5 rounded-full shadow-lg active:scale-95 transition-all text-sm uppercase tracking-widest">Retrait</button>
         </div>
 
-        {/* Raccourcis liste */}
         <div className="w-full space-y-2 mt-4">
            {[
-             { label: 'Re-Secalt', icon: 'fa-repeat', color: 'blue' },
-             { label: 'Retrait rapide', icon: 'fa-bolt', color: 'yellow' },
-             { label: 'Gros gains', icon: 'fa-trophy', color: 'orange' }
+             { label: 'Chat Support', icon: 'fa-comments', color: 'blue', onClick: onChat },
+             { label: 'Statistiques', icon: 'fa-chart-pie', color: 'yellow', onClick: () => {} }
            ].map((item, idx) => (
-             <div key={idx} className="flex items-center justify-between p-4 bg-[#F4F7FE] rounded-2xl active:bg-gray-100 transition-colors">
+             <div key={idx} onClick={item.onClick} className="flex items-center justify-between p-4 bg-[#F4F7FE] rounded-2xl active:bg-gray-100 transition-colors cursor-pointer">
                <div className="flex items-center gap-4">
-                 <div className={`w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-[10px] text-blue-600`}>
+                 <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-[10px] text-blue-600">
                    <i className={`fas ${item.icon}`}></i>
                  </div>
                  <span className="text-blue-900 font-bold text-xs uppercase tracking-tight opacity-70">{item.label}</span>
@@ -72,9 +58,9 @@ const UserHome: React.FC<UserHomeProps> = ({ user, onDeposit, onWithdraw, onLogo
         </div>
       </div>
       
-      {/* Bouton Support flottant */}
-      <button className="fixed bottom-28 right-6 w-14 h-14 bg-green-500 text-white rounded-full shadow-2xl flex items-center justify-center text-2xl z-40 border-4 border-white active:scale-90 transition-transform">
-        <i className="fab fa-whatsapp"></i>
+      {/* Bouton Chat flottant */}
+      <button onClick={onChat} className="fixed bottom-28 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-2xl flex items-center justify-center text-xl z-40 border-4 border-white active:scale-90 transition-transform">
+        <i className="fas fa-headset"></i>
       </button>
     </div>
   );

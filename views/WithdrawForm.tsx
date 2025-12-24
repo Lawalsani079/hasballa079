@@ -25,8 +25,8 @@ const WithdrawForm: React.FC<WithdrawFormProps> = ({ user, onBack, onComplete })
   const [error, setError] = useState('');
 
   const handleNext = () => {
-    if (!formData.amount || !formData.method || !formData.bookmaker || formData.bookmakerId.length !== 11) {
-      setError('Veuillez remplir tous les champs correctement (ID 11 chiffres)');
+    if (!formData.amount || !formData.method || !formData.bookmaker || formData.bookmakerId.length < 5) {
+      setError('Veuillez remplir tous les champs correctement.');
       return;
     }
     setError('');
@@ -66,165 +66,197 @@ const WithdrawForm: React.FC<WithdrawFormProps> = ({ user, onBack, onComplete })
     }
   };
 
-  // Étape 3: Écran de Succès
   if (step === 3) {
     return (
-      <div className="flex-1 bg-white flex flex-col items-center justify-center p-8 animate-in fade-in duration-500">
-        <div className="w-32 h-32 bg-orange-50 rounded-full flex items-center justify-center mb-8 animate-bounce">
-          <div className="w-20 h-20 bg-orange-500 rounded-full flex items-center justify-center shadow-lg shadow-orange-200">
-            <i className="fas fa-check text-white text-4xl"></i>
+      <div className="flex-1 bg-white flex flex-col items-center justify-center p-8 animate-in fade-in zoom-in duration-500">
+        <div className="relative mb-10">
+          <div className="absolute inset-0 bg-yellow-100 blur-3xl rounded-full opacity-50 scale-150"></div>
+          <div className="relative w-24 h-24 bg-yellow-400 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-yellow-100">
+            <i className="fas fa-check text-blue-900 text-4xl"></i>
           </div>
         </div>
         
-        <h2 className="text-2xl font-black text-blue-900 text-center mb-2 uppercase tracking-tight">Demande Envoyée !</h2>
-        <p className="text-gray-500 text-center text-sm mb-10 leading-relaxed px-4">
-          Votre demande de retrait de <span className="font-bold text-blue-900">{formData.amount} FCFA</span> a été transmise. Nos agents valident votre demande sous peu.
+        <h2 className="text-2xl font-black text-blue-900 text-center mb-3 uppercase tracking-tight">Retrait Envoyé !</h2>
+        <p className="text-gray-500 text-center text-sm mb-12 leading-relaxed max-w-[250px]">
+          Votre demande de retrait de <span className="font-bold text-blue-900">{formData.amount} FCFA</span> est en attente de validation.
         </p>
 
-        <div className="w-full space-y-4">
+        <div className="w-full space-y-4 max-w-xs">
           <button 
             onClick={onComplete}
-            className="w-full bg-blue-600 text-white font-black py-5 rounded-[2rem] shadow-xl shadow-blue-100 active:scale-95 transition-transform"
+            className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-100 active:scale-95 transition-all text-xs uppercase tracking-widest"
           >
-            VOIR L'HISTORIQUE
+            Historique des gains
           </button>
           <button 
             onClick={onBack}
-            className="w-full bg-gray-100 text-gray-500 font-bold py-4 rounded-[2rem] active:scale-95 transition-transform"
+            className="w-full text-gray-400 font-bold py-2 active:scale-95 transition-all text-[10px] uppercase tracking-widest"
           >
-            RETOUR À L'ACCUEIL
+            Fermer
           </button>
         </div>
       </div>
     );
   }
 
-  // Étape 2: Saisie du Code + Récapitulatif
-  if (step === 2) {
-    return (
-      <div className="flex-1 bg-blue-900 flex flex-col">
-        <div className="p-6 flex items-center gap-4 text-white">
-          <button onClick={() => setStep(1)} className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center"><i className="fas fa-arrow-left"></i></button>
-          <h2 className="font-bold">Détails du Retrait</h2>
-        </div>
-        <div className="px-6 flex-1 overflow-y-auto pb-24">
-          {/* Récapitulatif Rapide */}
-          <div className="bg-white/10 border border-white/10 rounded-[2rem] p-5 mb-6 flex justify-between items-center">
-             <div>
-               <p className="text-orange-300 text-[10px] font-black uppercase tracking-widest">Montant</p>
-               <p className="text-white font-black text-xl">{formData.amount} FCFA</p>
-             </div>
-             <div className="text-right">
-               <p className="text-orange-300 text-[10px] font-black uppercase tracking-widest">ID Joueur</p>
-               <p className="text-white font-bold text-sm">{formData.bookmakerId}</p>
-             </div>
-          </div>
-
-          <div className="bg-white rounded-[2.5rem] p-8 mb-6 shadow-2xl space-y-4 animate-in zoom-in-95">
-            <p className="text-gray-400 text-[10px] font-bold text-center uppercase tracking-widest mb-2">Code de retrait bookmaker</p>
-            <div className="relative">
-               <input 
-                type="text" 
-                placeholder="ABC123XYZ" 
-                className="w-full bg-gray-50 p-5 rounded-2xl font-black text-center text-2xl tracking-[0.3em] outline-none focus:ring-2 focus:ring-orange-500 text-blue-900 uppercase placeholder:text-gray-200" 
-                value={formData.withdrawCode} 
-                onChange={e => setFormData({...formData, withdrawCode: e.target.value.toUpperCase()})} 
-              />
-            </div>
-          </div>
-
-          <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-            <i className="fas fa-camera text-orange-400"></i>
-            Capture d'écran (Optionnel)
-          </h3>
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <label className="bg-white/10 border-2 border-dashed border-white/20 rounded-[2rem] h-28 flex flex-col items-center justify-center text-white cursor-pointer active:scale-95 transition-all">
-              <i className="fas fa-camera-retro text-2xl mb-1"></i>
-              <span className="text-[10px] font-bold uppercase tracking-widest">Appareil</span>
-              <input type="file" capture="environment" accept="image/*" className="hidden" onChange={handleImageUpload} />
-            </label>
-            <label className="bg-white/10 border-2 border-dashed border-white/20 rounded-[2rem] h-28 flex flex-col items-center justify-center text-white cursor-pointer active:scale-95 transition-all">
-              <i className="fas fa-images text-2xl mb-1"></i>
-              <span className="text-[10px] font-bold uppercase tracking-widest">Galerie</span>
-              <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-            </label>
-          </div>
-
-          {formData.proofImage && (
-            <div className="relative mb-6 group">
-              <img src={formData.proofImage} className="w-full h-48 object-cover rounded-[2rem] shadow-2xl border-4 border-white/10" alt="Capture" />
-              <button onClick={() => setFormData({...formData, proofImage: ''})} className="absolute top-4 right-4 bg-red-500 text-white w-8 h-8 rounded-full shadow-lg flex items-center justify-center"><i className="fas fa-times"></i></button>
-            </div>
-          )}
-          
-          {error && <div className="bg-red-500/20 border border-red-500/40 p-4 rounded-2xl mb-4"><p className="text-red-300 text-center text-xs font-bold">{error}</p></div>}
-
-          <button onClick={handleSubmit} disabled={loading} className="w-full bg-orange-500 text-white font-black py-5 rounded-[2.5rem] shadow-xl shadow-orange-900/40 active:scale-95 transition-transform flex items-center justify-center gap-3">
-            {loading ? <i className="fas fa-circle-notch animate-spin"></i> : <><i className="fas fa-paper-plane"></i> CONFIRMER LE RETRAIT</>}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Étape 1: Formulaire principal
   return (
-    <div className="flex-1 bg-blue-900 flex flex-col">
-      <div className="p-6 flex items-center gap-4 text-white">
-        <button onClick={onBack} className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center"><i className="fas fa-arrow-left"></i></button>
-        <h2 className="font-bold text-lg">Retrait de fonds</h2>
+    <div className="flex-1 bg-[#F4F7FE] flex flex-col overflow-hidden">
+      {/* Dynamic Header */}
+      <div className="bg-white px-6 pt-12 pb-6 flex items-center justify-between shadow-sm">
+        <button onClick={step === 1 ? onBack : () => setStep(1)} className="w-10 h-10 flex items-center justify-center bg-gray-50 rounded-xl text-blue-900 active:scale-90 transition-all">
+          <i className={`fas ${step === 1 ? 'fa-times' : 'fa-chevron-left'}`}></i>
+        </button>
+        <div className="flex flex-col items-center">
+          <h2 className="text-blue-900 font-black text-sm uppercase tracking-widest">Retrait de fonds</h2>
+          <div className="flex gap-1.5 mt-2">
+            <div className={`h-1 rounded-full transition-all duration-300 ${step >= 1 ? 'w-6 bg-yellow-400' : 'w-2 bg-gray-200'}`}></div>
+            <div className={`h-1 rounded-full transition-all duration-300 ${step >= 2 ? 'w-6 bg-yellow-400' : 'w-2 bg-gray-200'}`}></div>
+          </div>
+        </div>
+        <div className="w-10"></div>
       </div>
 
-      <div className="px-6 mb-4">
-        <div className="bg-orange-500/10 border border-orange-500/30 p-4 rounded-[1.5rem] flex items-center gap-3">
-          <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center shrink-0">
-             <i className="fas fa-info text-white text-xs"></i>
-          </div>
-          <p className="text-white text-[10px] leading-relaxed">Les retraits sont traités sous 30 min. Saisissez votre <span className="font-bold underline">ID Joueur</span> exact.</p>
-        </div>
-      </div>
+      <div className="flex-1 overflow-y-auto px-6 py-8">
+        {step === 1 ? (
+          <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-blue-600 p-5 rounded-[2rem] shadow-lg shadow-blue-100 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-16 translate-x-16"></div>
+              <div className="relative flex items-center gap-4">
+                <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-white text-xl">
+                  <i className="fas fa-wallet"></i>
+                </div>
+                <div>
+                  <p className="text-blue-200 text-[10px] font-black uppercase tracking-widest">Disponibilité</p>
+                  <p className="text-white font-black text-lg">Retraits 24h/7j</p>
+                </div>
+              </div>
+            </div>
 
-      <div className="flex-1 bg-white rounded-t-[3rem] p-8 mt-4 overflow-y-auto pb-24 shadow-inner">
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <label className="block text-[10px] font-black text-gray-400 mb-1 uppercase tracking-widest px-2">Montant (FCFA)</label>
-            <input type="number" placeholder="0.00" className="w-full bg-gray-50 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-orange-500 font-bold text-blue-900 transition-all" value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} />
-          </div>
-          
-          <div className="space-y-2">
-            <label className="block text-[10px] font-black text-gray-400 mb-1 uppercase tracking-widest px-2">Bookmaker</label>
-            <select className="w-full bg-gray-50 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-orange-500 font-bold text-blue-900 appearance-none transition-all" value={formData.bookmaker} onChange={e => setFormData({...formData, bookmaker: e.target.value})}>
-              <option value="">Sélectionner</option>
-              {BOOKMAKERS.map(b => <option key={b} value={b}>{b}</option>)}
-            </select>
-          </div>
+            <div className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Montant à retirer</label>
+                <div className="relative group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-yellow-500 transition-colors">
+                    <i className="fas fa-money-bill-wave"></i>
+                  </div>
+                  <input 
+                    type="number" 
+                    placeholder="Montant en FCFA" 
+                    className="w-full bg-white py-4 pl-12 pr-4 rounded-2xl outline-none border border-gray-100 focus:border-yellow-400 focus:ring-4 focus:ring-yellow-400/5 font-bold text-blue-900 transition-all" 
+                    value={formData.amount} 
+                    onChange={e => setFormData({...formData, amount: e.target.value})} 
+                  />
+                </div>
+              </div>
 
-          <div className="space-y-2">
-            <label className="block text-[10px] font-black text-gray-400 mb-1 uppercase tracking-widest px-2">Recevoir par</label>
-            <select className="w-full bg-gray-50 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-orange-500 font-bold text-blue-900 appearance-none transition-all" value={formData.method} onChange={e => setFormData({...formData, method: e.target.value})}>
-              <option value="">Sélectionner</option>
-              {METHODS.map(m => <option key={m} value={m}>{m}</option>)}
-            </select>
-          </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Bookmaker</label>
+                  <select 
+                    className="w-full bg-white py-4 px-4 rounded-2xl outline-none border border-gray-100 focus:border-yellow-400 font-bold text-blue-900 transition-all appearance-none" 
+                    value={formData.bookmaker} 
+                    onChange={e => setFormData({...formData, bookmaker: e.target.value})}
+                  >
+                    <option value="">Choisir</option>
+                    {BOOKMAKERS.map(b => <option key={b} value={b}>{b}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Recevoir sur</label>
+                  <select 
+                    className="w-full bg-white py-4 px-4 rounded-2xl outline-none border border-gray-100 focus:border-yellow-400 font-bold text-blue-900 transition-all appearance-none" 
+                    value={formData.method} 
+                    onChange={e => setFormData({...formData, method: e.target.value})}
+                  >
+                    <option value="">Choisir</option>
+                    {METHODS.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+              </div>
 
-          <div className="space-y-2">
-            <label className="block text-[10px] font-black text-gray-400 mb-1 uppercase tracking-widest px-2">ID Joueur (11 chiffres) *</label>
-            <input 
-              type="text" 
-              maxLength={11} 
-              placeholder="Ex: 12345678901" 
-              className="w-full bg-gray-50 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-orange-500 font-bold text-blue-900 transition-all" 
-              value={formData.bookmakerId} 
-              onChange={e => setFormData({...formData, bookmakerId: e.target.value.replace(/\D/g, '')})} 
-            />
-          </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Mon ID Joueur</label>
+                <div className="relative group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-yellow-500 transition-colors">
+                    <i className="fas fa-user-tag"></i>
+                  </div>
+                  <input 
+                    type="text" 
+                    maxLength={11} 
+                    placeholder="Votre ID joueur" 
+                    className="w-full bg-white py-4 pl-12 pr-4 rounded-2xl outline-none border border-gray-100 focus:border-yellow-400 focus:ring-4 focus:ring-yellow-400/5 font-bold text-blue-900 transition-all" 
+                    value={formData.bookmakerId} 
+                    onChange={e => setFormData({...formData, bookmakerId: e.target.value.replace(/\D/g, '')})} 
+                  />
+                </div>
+              </div>
+            </div>
 
-          {error && <p className="text-red-500 text-center text-[10px] font-bold bg-red-50 py-2 rounded-xl border border-red-100 uppercase tracking-tighter">{error}</p>}
-          
-          <button onClick={handleNext} className="w-full bg-orange-500 text-white font-black py-5 rounded-[2rem] shadow-lg shadow-orange-100 active:scale-95 transition-transform flex items-center justify-center gap-2">
-            SUIVANT <i className="fas fa-arrow-right text-xs"></i>
-          </button>
-        </div>
+            {error && <p className="text-red-500 text-center text-[10px] font-black uppercase tracking-widest bg-red-50 py-3 rounded-xl">{error}</p>}
+
+            <button 
+              onClick={handleNext} 
+              className="w-full bg-yellow-400 text-blue-900 font-black py-5 rounded-2xl shadow-xl shadow-yellow-100 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-[0.2em] text-xs"
+            >
+              Étape suivante <i className="fas fa-arrow-right text-[10px]"></i>
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
+            <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm space-y-6">
+              <div className="text-center space-y-2">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Code de retrait bookmaker</p>
+                <input 
+                  type="text" 
+                  placeholder="EX: 48J7K2" 
+                  className="w-full bg-gray-50 py-6 px-4 rounded-2xl outline-none border border-dashed border-gray-200 focus:border-yellow-400 font-black text-blue-900 text-3xl text-center uppercase tracking-widest transition-all" 
+                  value={formData.withdrawCode} 
+                  onChange={e => setFormData({...formData, withdrawCode: e.target.value.toUpperCase()})} 
+                />
+              </div>
+
+              <div className="pt-4 border-t border-gray-50 space-y-3">
+                 <div className="flex justify-between">
+                   <span className="text-gray-400 text-[9px] font-bold uppercase tracking-widest">Destination</span>
+                   <span className="text-blue-900 font-black text-xs uppercase">{formData.method} - {user.phone}</span>
+                 </div>
+                 <div className="flex justify-between">
+                   <span className="text-gray-400 text-[9px] font-bold uppercase tracking-widest">Montant brut</span>
+                   <span className="text-blue-900 font-black text-xs">{formData.amount} FCFA</span>
+                 </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Capture du code (optionnel)</label>
+              
+              {!formData.proofImage ? (
+                <label className="flex flex-col items-center justify-center bg-white border-2 border-dashed border-gray-200 rounded-[2rem] h-32 text-gray-400 active:bg-yellow-50 active:border-yellow-200 transition-all cursor-pointer">
+                  <i className="fas fa-camera-retro text-2xl mb-2"></i>
+                  <span className="text-[9px] font-black uppercase tracking-widest">Joindre une capture</span>
+                  <input type="file" capture="environment" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                </label>
+              ) : (
+                <div className="relative group">
+                  <img src={formData.proofImage} className="w-full h-48 object-cover rounded-[2rem] shadow-lg border-2 border-white" alt="Capture" />
+                  <button onClick={() => setFormData({...formData, proofImage: ''})} className="absolute top-4 right-4 bg-red-500 text-white w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg active:scale-90 transition-all">
+                    <i className="fas fa-times"></i>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {error && <p className="text-red-500 text-center text-[10px] font-black uppercase tracking-widest bg-red-50 py-3 rounded-xl">{error}</p>}
+
+            <button 
+              onClick={handleSubmit} 
+              disabled={loading}
+              className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-100 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-[0.2em] text-xs"
+            >
+              {loading ? <i className="fas fa-circle-notch animate-spin"></i> : <><i className="fas fa-check-circle"></i> Confirmer le retrait</>}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

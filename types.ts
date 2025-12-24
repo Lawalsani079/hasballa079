@@ -25,6 +25,15 @@ export interface TransactionRequest {
   createdAt: number;
 }
 
+export interface ChatMessage {
+  id: string;
+  userId: string;
+  userName: string;
+  text: string;
+  isAdmin: boolean;
+  createdAt: number;
+}
+
 export interface BannerItem {
   id: string;
   image: string;

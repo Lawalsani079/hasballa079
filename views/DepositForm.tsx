@@ -18,8 +18,8 @@ const DepositForm: React.FC<DepositFormProps> = ({ user, onBack, onComplete }) =
   const [error, setError] = useState('');
 
   const handleNext = () => {
-    if (!formData.amount || !formData.method || !formData.bookmaker || formData.bookmakerId.length !== 11) {
-      setError('Veuillez remplir tous les champs correctement (ID 11 chiffres)');
+    if (!formData.amount || !formData.method || !formData.bookmaker || formData.bookmakerId.length < 5) {
+      setError('Veuillez remplir tous les champs correctement.');
       return;
     }
     setError('');
@@ -59,89 +59,33 @@ const DepositForm: React.FC<DepositFormProps> = ({ user, onBack, onComplete }) =
     }
   };
 
-  // Étape 3: Succès
   if (step === 3) {
     return (
-      <div className="flex-1 bg-white flex flex-col items-center justify-center p-8 animate-in fade-in duration-500">
-        <div className="w-32 h-32 bg-blue-50 rounded-full flex items-center justify-center mb-8 animate-bounce">
-          <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-200">
+      <div className="flex-1 bg-white flex flex-col items-center justify-center p-8 animate-in fade-in zoom-in duration-500">
+        <div className="relative mb-10">
+          <div className="absolute inset-0 bg-blue-100 blur-3xl rounded-full opacity-50 scale-150"></div>
+          <div className="relative w-24 h-24 bg-blue-600 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-blue-200">
             <i className="fas fa-check text-white text-4xl"></i>
           </div>
         </div>
         
-        <h2 className="text-2xl font-black text-blue-900 text-center mb-2 uppercase tracking-tight">Dépôt Envoyé !</h2>
-        <p className="text-gray-500 text-center text-sm mb-10 leading-relaxed px-4">
-          Votre demande de recharge de <span className="font-bold text-blue-900">{formData.amount} FCFA</span> est en cours de traitement. 
+        <h2 className="text-2xl font-black text-blue-900 text-center mb-3 uppercase tracking-tight">Dépôt Confirmé !</h2>
+        <p className="text-gray-500 text-center text-sm mb-12 leading-relaxed max-w-[250px]">
+          Votre demande de <span className="font-bold text-blue-900">{formData.amount} FCFA</span> a été transmise avec succès.
         </p>
 
-        <div className="w-full space-y-4">
+        <div className="w-full space-y-4 max-w-xs">
           <button 
             onClick={onComplete}
-            className="w-full bg-blue-600 text-white font-black py-5 rounded-[2rem] shadow-xl shadow-blue-100 active:scale-95 transition-transform"
+            className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-100 active:scale-95 transition-all text-xs uppercase tracking-widest"
           >
-            VOIR L'HISTORIQUE
+            Suivre ma demande
           </button>
           <button 
             onClick={onBack}
-            className="w-full bg-gray-100 text-gray-500 font-bold py-4 rounded-[2rem] active:scale-95 transition-transform"
+            className="w-full text-gray-400 font-bold py-2 active:scale-95 transition-all text-[10px] uppercase tracking-widest"
           >
-            RETOUR À L'ACCUEIL
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (step === 2) {
-    return (
-      <div className="flex-1 bg-blue-900 flex flex-col">
-        <div className="p-6 flex items-center gap-4 text-white">
-          <button onClick={() => setStep(1)} className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center"><i className="fas fa-arrow-left"></i></button>
-          <h2 className="font-bold">Confirmation</h2>
-        </div>
-        <div className="px-6 flex-1 overflow-y-auto pb-24">
-          <div className="bg-white rounded-[2rem] p-6 mb-6 space-y-4 shadow-2xl">
-            {Object.entries({
-              'Montant': formData.amount + ' FCFA',
-              'Bookmaker': formData.bookmaker,
-              'ID': formData.bookmakerId,
-              'Méthode': formData.method
-            }).map(([k, v]) => (
-              <div key={k} className="flex justify-between border-b border-gray-50 pb-2">
-                <span className="text-gray-400 text-xs font-bold uppercase tracking-widest">{k}</span>
-                <span className="font-bold text-blue-900">{v}</span>
-              </div>
-            ))}
-          </div>
-
-          <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-            <i className="fas fa-camera text-yellow-400"></i>
-            Téléverser le reçu *
-          </h3>
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <label className="bg-white/10 border-2 border-dashed border-white/20 rounded-[2rem] h-28 flex flex-col items-center justify-center text-white cursor-pointer active:scale-95 transition-all">
-              <i className="fas fa-camera-retro text-2xl mb-1"></i>
-              <span className="text-[10px] font-bold uppercase tracking-widest">Appareil</span>
-              <input type="file" capture="environment" accept="image/*" className="hidden" onChange={handleImageUpload} />
-            </label>
-            <label className="bg-white/10 border-2 border-dashed border-white/20 rounded-[2rem] h-28 flex flex-col items-center justify-center text-white cursor-pointer active:scale-95 transition-all">
-              <i className="fas fa-images text-2xl mb-1"></i>
-              <span className="text-[10px] font-bold uppercase tracking-widest">Galerie</span>
-              <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-            </label>
-          </div>
-
-          {formData.proofImage && (
-             <div className="relative mb-6">
-                <img src={formData.proofImage} className="w-full h-48 object-cover rounded-[2rem] shadow-2xl border-4 border-white/10" alt="Reçu" />
-                <button onClick={() => setFormData({...formData, proofImage: ''})} className="absolute top-4 right-4 bg-red-500 text-white w-8 h-8 rounded-full flex items-center justify-center"><i className="fas fa-times"></i></button>
-             </div>
-          )}
-          
-          {error && <div className="bg-red-500/20 border border-red-500/40 p-4 rounded-2xl mb-4"><p className="text-red-300 text-center text-xs font-bold">{error}</p></div>}
-
-          <button onClick={handleSubmit} disabled={loading} className="w-full bg-yellow-400 text-blue-900 font-black py-5 rounded-[2rem] shadow-xl shadow-yellow-900/20 active:scale-95 transition-transform flex items-center justify-center gap-3">
-            {loading ? <i className="fas fa-circle-notch animate-spin"></i> : <><i className="fas fa-paper-plane"></i> ENVOYER LA DEMANDE</>}
+            Fermer
           </button>
         </div>
       </div>
@@ -149,66 +93,161 @@ const DepositForm: React.FC<DepositFormProps> = ({ user, onBack, onComplete }) =
   }
 
   return (
-    <div className="flex-1 bg-blue-900 flex flex-col">
-      <div className="p-6 flex items-center gap-4 text-white">
-        <button onClick={onBack} className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center"><i className="fas fa-arrow-left"></i></button>
-        <h2 className="font-bold">Dépôt rapide</h2>
-      </div>
-
-      <div className="px-6 mb-4">
-        <div className="bg-red-500/10 border border-red-500/30 p-4 rounded-[1.5rem]">
-          <p className="text-white text-xs text-center"><span className="font-bold text-red-400 uppercase tracking-tighter">Important:</span> Effectuez le transfert au <span className="underline font-black text-white">91115848</span> avant de remplir ce formulaire.</p>
+    <div className="flex-1 bg-[#F4F7FE] flex flex-col overflow-hidden">
+      {/* Dynamic Header */}
+      <div className="bg-white px-6 pt-12 pb-6 flex items-center justify-between shadow-sm">
+        <button onClick={step === 1 ? onBack : () => setStep(1)} className="w-10 h-10 flex items-center justify-center bg-gray-50 rounded-xl text-blue-900 active:scale-90 transition-all">
+          <i className={`fas ${step === 1 ? 'fa-times' : 'fa-chevron-left'}`}></i>
+        </button>
+        <div className="flex flex-col items-center">
+          <h2 className="text-blue-900 font-black text-sm uppercase tracking-widest">Effectuer un Dépôt</h2>
+          <div className="flex gap-1.5 mt-2">
+            <div className={`h-1 rounded-full transition-all duration-300 ${step >= 1 ? 'w-6 bg-blue-600' : 'w-2 bg-gray-200'}`}></div>
+            <div className={`h-1 rounded-full transition-all duration-300 ${step >= 2 ? 'w-6 bg-blue-600' : 'w-2 bg-gray-200'}`}></div>
+          </div>
         </div>
+        <div className="w-10"></div>
       </div>
 
-      <div className="flex-1 bg-white rounded-t-[3rem] p-8 mt-4 overflow-y-auto pb-24 shadow-inner">
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <label className="block text-[10px] font-black text-gray-400 mb-1 uppercase tracking-widest px-2">Montant (FCFA)</label>
-            <input type="number" placeholder="0.00" className="w-full bg-gray-50 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-blue-900 transition-all" value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} />
-          </div>
-          
-          <div className="space-y-2">
-            <label className="block text-[10px] font-black text-gray-400 mb-1 uppercase tracking-widest px-2">Bookmaker</label>
-            <select className="w-full bg-gray-50 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-blue-900 appearance-none" value={formData.bookmaker} onChange={e => setFormData({...formData, bookmaker: e.target.value})}>
-              <option value="">Sélectionner</option>
-              {BOOKMAKERS.map(b => <option key={b} value={b}>{b}</option>)}
-            </select>
-          </div>
+      <div className="flex-1 overflow-y-auto px-6 py-8">
+        {step === 1 ? (
+          <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+            {/* Warning Message */}
+            <div className="bg-yellow-50 border border-yellow-100 p-4 rounded-2xl flex gap-3 items-start">
+              <i className="fas fa-info-circle text-yellow-600 mt-1"></i>
+              <p className="text-yellow-800 text-[11px] leading-relaxed">
+                <span className="font-black uppercase block mb-1">Action requise</span>
+                Envoyez d'abord le montant au <span className="font-black text-blue-600 underline">91115848</span> avant de valider ce formulaire.
+              </p>
+            </div>
 
-          <div className="space-y-2">
-            <label className="block text-[10px] font-black text-gray-400 mb-1 uppercase tracking-widest px-2">Méthode Utilisée</label>
-            <select className="w-full bg-gray-50 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-blue-900 appearance-none" value={formData.method} onChange={e => setFormData({...formData, method: e.target.value})}>
-              <option value="">Sélectionner</option>
-              {METHODS.map(m => <option key={m} value={m}>{m}</option>)}
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-[10px] font-black text-gray-400 mb-1 uppercase tracking-widest px-2">ID Joueur (11 chiffres)</label>
-            <input type="text" maxLength={11} placeholder="Ex: 12345678901" className="w-full bg-gray-50 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold text-blue-900 transition-all" value={formData.bookmakerId} onChange={e => setFormData({...formData, bookmakerId: e.target.value.replace(/\D/g, '')})} />
-          </div>
-
-          {error && <p className="text-red-500 text-center text-xs font-bold bg-red-50 py-2 rounded-xl">{error}</p>}
-          
-          <div className="space-y-4">
-            <button onClick={handleNext} className="w-full bg-blue-600 text-white font-black py-5 rounded-[2rem] shadow-lg shadow-blue-100 active:scale-95 transition-transform">
-              SUIVANT
-            </button>
-            
-            <a 
-              href="https://www.youtube.com/results?search_query=comment+effectuer+un+depot+1xbet+niger" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-3 text-red-600 font-bold text-[11px] py-2 hover:opacity-80 transition-opacity uppercase tracking-widest"
-            >
-              <div className="bg-red-100 p-2 rounded-full flex items-center justify-center">
-                <i className="fab fa-youtube text-lg"></i>
+            <div className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Montant à déposer</label>
+                <div className="relative group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-blue-600 transition-colors">
+                    <i className="fas fa-coins"></i>
+                  </div>
+                  <input 
+                    type="number" 
+                    placeholder="Montant en FCFA" 
+                    className="w-full bg-white py-4 pl-12 pr-4 rounded-2xl outline-none border border-gray-100 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 font-bold text-blue-900 transition-all" 
+                    value={formData.amount} 
+                    onChange={e => setFormData({...formData, amount: e.target.value})} 
+                  />
+                </div>
               </div>
-              <span>Tutoriel: Comment faire ?</span>
-            </a>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Bookmaker</label>
+                  <select 
+                    className="w-full bg-white py-4 px-4 rounded-2xl outline-none border border-gray-100 focus:border-blue-500 font-bold text-blue-900 transition-all appearance-none" 
+                    value={formData.bookmaker} 
+                    onChange={e => setFormData({...formData, bookmaker: e.target.value})}
+                  >
+                    <option value="">Choisir</option>
+                    {BOOKMAKERS.map(b => <option key={b} value={b}>{b}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Méthode</label>
+                  <select 
+                    className="w-full bg-white py-4 px-4 rounded-2xl outline-none border border-gray-100 focus:border-blue-500 font-bold text-blue-900 transition-all appearance-none" 
+                    value={formData.method} 
+                    onChange={e => setFormData({...formData, method: e.target.value})}
+                  >
+                    <option value="">Choisir</option>
+                    {METHODS.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">ID Joueur</label>
+                <div className="relative group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-blue-600 transition-colors">
+                    <i className="fas fa-id-card"></i>
+                  </div>
+                  <input 
+                    type="text" 
+                    maxLength={11} 
+                    placeholder="11 chiffres requis" 
+                    className="w-full bg-white py-4 pl-12 pr-4 rounded-2xl outline-none border border-gray-100 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 font-bold text-blue-900 transition-all" 
+                    value={formData.bookmakerId} 
+                    onChange={e => setFormData({...formData, bookmakerId: e.target.value.replace(/\D/g, '')})} 
+                  />
+                </div>
+              </div>
+            </div>
+
+            {error && <p className="text-red-500 text-center text-[10px] font-black uppercase tracking-widest bg-red-50 py-3 rounded-xl">{error}</p>}
+
+            <button 
+              onClick={handleNext} 
+              className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-100 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-[0.2em] text-xs"
+            >
+              Suivant <i className="fas fa-chevron-right text-[10px]"></i>
+            </button>
           </div>
-        </div>
+        ) : (
+          <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
+            <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-4">
+              <h3 className="text-blue-900 font-black text-xs uppercase tracking-widest border-b border-gray-50 pb-4 flex items-center gap-2">
+                <i className="fas fa-file-invoice text-blue-600"></i> Récapitulatif
+              </h3>
+              <div className="space-y-3 pt-2">
+                {[
+                  { label: 'Montant', val: formData.amount + ' FCFA' },
+                  { label: 'Bookmaker', val: formData.bookmaker },
+                  { label: 'ID Joueur', val: formData.bookmakerId },
+                  { label: 'Méthode', val: formData.method }
+                ].map((item, i) => (
+                  <div key={i} className="flex justify-between items-center">
+                    <span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">{item.label}</span>
+                    <span className="text-blue-900 font-black text-sm">{item.val}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Preuve de transfert (Reçu)</label>
+              
+              {!formData.proofImage ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <label className="flex flex-col items-center justify-center bg-white border-2 border-dashed border-gray-200 rounded-[2rem] h-32 text-gray-400 active:bg-blue-50 active:border-blue-200 transition-all cursor-pointer">
+                    <i className="fas fa-camera text-2xl mb-2"></i>
+                    <span className="text-[9px] font-black uppercase tracking-widest">Prendre Photo</span>
+                    <input type="file" capture="environment" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                  </label>
+                  <label className="flex flex-col items-center justify-center bg-white border-2 border-dashed border-gray-200 rounded-[2rem] h-32 text-gray-400 active:bg-blue-50 active:border-blue-200 transition-all cursor-pointer">
+                    <i className="fas fa-images text-2xl mb-2"></i>
+                    <span className="text-[9px] font-black uppercase tracking-widest">De la Galerie</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                  </label>
+                </div>
+              ) : (
+                <div className="relative group">
+                  <img src={formData.proofImage} className="w-full h-48 object-cover rounded-[2rem] shadow-lg border-2 border-white" alt="Reçu" />
+                  <button onClick={() => setFormData({...formData, proofImage: ''})} className="absolute top-4 right-4 bg-red-500 text-white w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg active:scale-90 transition-all">
+                    <i className="fas fa-times"></i>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {error && <p className="text-red-500 text-center text-[10px] font-black uppercase tracking-widest bg-red-50 py-3 rounded-xl">{error}</p>}
+
+            <button 
+              onClick={handleSubmit} 
+              disabled={loading}
+              className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-100 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-[0.2em] text-xs"
+            >
+              {loading ? <i className="fas fa-circle-notch animate-spin"></i> : <><i className="fas fa-paper-plane"></i> Envoyer la demande</>}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
