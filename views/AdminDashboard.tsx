@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { doc, updateDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { db } from '../firebaseConfig';
 import { TransactionRequest, ChatMessage, RequestType, User } from '../types';
 import Chat from './Chat';
@@ -20,6 +20,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ requests, messages, all
   const [selectedRequest, setSelectedRequest] = useState<TransactionRequest | null>(null);
   const [selectedUserChat, setSelectedUserChat] = useState<{id: string, name: string} | null>(null);
   const [searchUser, setSearchUser] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   const stats = useMemo(() => {
     const now = Date.now();
@@ -53,6 +54,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ requests, messages, all
     return requests.filter(r => r.type === requestFilter && r.status === 'En attente');
   }, [requests, requestFilter]);
 
+  const archiveRequests = useMemo(() => {
+    return requests.filter(r => r.status !== 'En attente');
+  }, [requests]);
+
   const displayUsers = useMemo(() => {
     return allUsers
       .filter(u => u.role === 'user')
@@ -67,6 +72,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ requests, messages, all
     });
     return Object.entries(userMap).sort((a, b) => b[1].time - a[1].time);
   }, [messages]);
+
+  const handleClearArchives = async () => {
+    if (archiveRequests.length === 0) return;
+    if (!window.confirm(`Voulez-vous supprimer définitivement les ${archiveRequests.length} opérations archivées ? Cette action est irréversible.`)) return;
+
+    setDeleting(true);
+    try {
+      const batch = writeBatch(db);
+      archiveRequests.forEach(req => {
+        batch.delete(doc(db, "requests", req.id));
+      });
+      await batch.commit();
+    } catch (err) {
+      alert("Erreur lors de la suppression des archives.");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div className="flex-1 flex flex-col h-screen overflow-hidden text-white bg-[#081a2b]">
@@ -83,9 +106,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ requests, messages, all
       <main className="flex-1 overflow-y-auto px-4 pb-32 pt-4">
         {activeSubView === 'dashboard' && (
           <div className="animate-in fade-in duration-300">
-            {/* Grille Ultra-Compacte */}
             <div className="grid grid-cols-3 gap-2 mb-6">
-              {/* Ligne 1 */}
               <div className="bg-blue-600/20 p-2.5 rounded-2xl border border-blue-500/20 h-20 flex flex-col justify-between">
                 <p className="text-[6px] font-black text-blue-300 uppercase tracking-widest">En Ligne</p>
                 <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse self-end -mt-2"></div>
@@ -102,7 +123,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ requests, messages, all
                 <h2 className="text-lg font-black text-yellow-400">{stats.enAttenteTotal}</h2>
               </div>
 
-              {/* Ligne 2 - Statistiques Financières */}
               <div className="bg-green-500/10 border border-green-500/30 p-2.5 rounded-2xl h-20 flex flex-col justify-between">
                 <p className="text-[6px] font-black text-green-400 uppercase tracking-widest leading-none">Total Validé</p>
                 <h2 className="text-[10px] font-black text-green-400 truncate">{stats.validatedSum.toLocaleString()} F</h2>
@@ -119,7 +139,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ requests, messages, all
               </div>
             </div>
 
-            {/* Sélecteur de type */}
             <div className="flex gap-1.5 mb-6">
               {['Dépôt', 'Retrait', 'Crypto'].map(t => (
                 <button 
@@ -132,7 +151,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ requests, messages, all
               ))}
             </div>
 
-            {/* Liste des demandes */}
             <div className="space-y-2">
               <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-white/20 px-2 mb-2">Demandes {requestFilter}s</h3>
               {filteredRequests.map(req => (
@@ -161,7 +179,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ requests, messages, all
           </div>
         )}
 
-        {/* ... Autres vues (users, support, archives) identiques ... */}
         {activeSubView === 'users' && (
           <div className="animate-in slide-in-from-right-4 duration-300 pb-20">
              <div className="flex items-center justify-between mb-6 px-2">
@@ -218,9 +235,55 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ requests, messages, all
              </div>
           </div>
         )}
+
+        {activeSubView === 'archives' && (
+          <div className="animate-in slide-in-from-right-4 duration-300 pb-20 px-2">
+             <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-lg font-black uppercase tracking-tight">Archives</h2>
+                  <p className="text-[8px] font-black text-white/30 uppercase tracking-[0.2em]">{archiveRequests.length} opérations traitées</p>
+                </div>
+                <button 
+                  onClick={handleClearArchives}
+                  disabled={deleting || archiveRequests.length === 0}
+                  className="bg-red-500/10 text-red-500 border border-red-500/20 px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest active:scale-90 disabled:opacity-20 flex items-center gap-2"
+                >
+                   {deleting ? <i className="fas fa-circle-notch animate-spin"></i> : <i className="fas fa-broom"></i>}
+                   Vider
+                </button>
+             </div>
+
+             <div className="space-y-2">
+                {archiveRequests.slice(0, 50).map(req => (
+                  <div key={req.id} className="bg-white/5 p-3 rounded-2xl flex items-center justify-between border border-white/5 opacity-80">
+                     <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-[10px] ${req.status === 'Validé' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                           <i className={`fas ${req.status === 'Validé' ? 'fa-check' : 'fa-times'}`}></i>
+                        </div>
+                        <div>
+                           <p className="font-black text-[10px]">{req.userName}</p>
+                           <p className="text-[7px] uppercase font-bold text-white/30">{req.amount} F • {req.type} {req.bookmaker || ''}</p>
+                        </div>
+                     </div>
+                     <div className="text-right">
+                        <span className={`text-[7px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest ${req.status === 'Validé' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                           {req.status}
+                        </span>
+                        <p className="text-[6px] font-bold text-white/10 mt-1">{new Date(req.createdAt).toLocaleDateString()}</p>
+                     </div>
+                  </div>
+                ))}
+                {archiveRequests.length === 0 && (
+                  <div className="text-center py-20 border border-dashed border-white/5 rounded-[2.5rem] opacity-20">
+                     <i className="fas fa-box-open text-4xl mb-4"></i>
+                     <p className="text-[10px] font-black uppercase tracking-widest">Aucune archive</p>
+                  </div>
+                )}
+             </div>
+          </div>
+        )}
       </main>
 
-      {/* Détails Demande et autres Modaux... */}
       {selectedRequest && (
         <div className="fixed inset-0 z-[150] bg-black/90 flex items-end animate-in fade-in duration-300 p-4">
            <div className="bg-[#081a2b] w-full max-w-md mx-auto rounded-[2.5rem] p-6 border border-white/10 space-y-5 shadow-2xl overflow-y-auto max-h-[90vh]">
@@ -267,7 +330,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ requests, messages, all
         </div>
       )}
 
-      {/* Navigation Admin */}
       <nav className="fixed bottom-0 left-0 right-0 flex justify-around items-center py-4 z-[100] bg-[#04111d] border-t border-white/5 rounded-t-[2rem] shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
         <button onClick={() => setActiveSubView('dashboard')} className={`flex flex-col items-center gap-1 transition-all ${activeSubView === 'dashboard' ? 'text-yellow-400 scale-105' : 'text-white/30'}`}>
           <i className="fas fa-chart-pie text-lg"></i>
@@ -283,7 +345,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ requests, messages, all
         </button>
         <button onClick={() => setActiveSubView('archives')} className={`flex flex-col items-center gap-1 transition-all ${activeSubView === 'archives' ? 'text-yellow-400 scale-105' : 'text-white/30'}`}>
           <i className="fas fa-clock-rotate-left text-lg"></i>
-          <span className="text-[7px] font-black uppercase tracking-tighter">Logs</span>
+          <span className="text-[7px] font-black uppercase tracking-tighter">Archives</span>
         </button>
       </nav>
     </div>
