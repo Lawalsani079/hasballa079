@@ -4,6 +4,7 @@ import { doc, updateDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/f
 import { db } from '../firebaseConfig';
 import { TransactionRequest, ChatMessage, RequestType, User } from '../types';
 import Chat from './Chat';
+import { ASSETS } from '../constants';
 
 interface AdminDashboardProps {
   requests: TransactionRequest[];
@@ -95,7 +96,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ requests, messages, all
     <div className="flex-1 flex flex-col h-screen overflow-hidden text-white bg-[#081a2b]">
       <header className="px-6 pt-12 pb-4 flex justify-between items-center bg-[#081a2b] shrink-0 border-b border-white/5">
         <div className="flex items-center gap-3">
-           <div className="w-8 h-8 bg-yellow-400 rounded-lg flex items-center justify-center text-[#081a2b] font-black text-xs shadow-lg shadow-yellow-400/20">R+</div>
+           <img src={ASSETS.logoAdmin} alt="Admin Logo" className="w-8 h-8 rounded-lg shadow-lg shadow-blue-400/20" />
            <h1 className="text-[10px] font-black uppercase tracking-[0.2em]">Administration</h1>
         </div>
         <button onClick={onLogout} className="w-10 h-10 flex items-center justify-center text-red-400 bg-red-500/10 rounded-xl border border-red-500/20 active:scale-90 transition-all">
@@ -108,29 +109,31 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ requests, messages, all
           <div className="animate-in fade-in duration-300">
             <div className="grid grid-cols-3 gap-2 mb-6">
               <div className="bg-blue-600/20 p-2.5 rounded-2xl border border-blue-500/20 h-20 flex flex-col justify-between">
-                <p className="text-[6px] font-black text-blue-300 uppercase tracking-widest">En Ligne</p>
-                <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse self-end -mt-2"></div>
+                <p className="text-[6px] font-black text-blue-300 uppercase tracking-widest leading-none">En Ligne</p>
+                <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse self-end"></div>
                 <h2 className="text-lg font-black">{stats.onlineUsers}</h2>
               </div>
 
               <div onClick={() => setActiveSubView('users')} className="bg-white/5 p-2.5 rounded-2xl border border-white/10 h-20 flex flex-col justify-between active:bg-white/10">
-                <p className="text-[6px] font-black text-white/40 uppercase tracking-widest">Clients</p>
+                <p className="text-[6px] font-black text-white/40 uppercase tracking-widest leading-none">Clients</p>
+                <i className="fas fa-users text-[8px] opacity-20 self-end"></i>
                 <h2 className="text-lg font-black">{stats.totalUsers}</h2>
               </div>
 
               <div className="bg-yellow-400/10 border border-yellow-400/30 p-2.5 rounded-2xl h-20 flex flex-col justify-between">
-                <p className="text-[6px] font-black text-yellow-400 uppercase tracking-widest">Attente</p>
+                <p className="text-[6px] font-black text-yellow-400 uppercase tracking-widest leading-none">Attente</p>
+                <i className="fas fa-clock text-[8px] opacity-40 self-end text-yellow-400"></i>
                 <h2 className="text-lg font-black text-yellow-400">{stats.enAttenteTotal}</h2>
               </div>
 
-              <div className="bg-green-500/10 border border-green-500/30 p-2.5 rounded-2xl h-20 flex flex-col justify-between">
-                <p className="text-[6px] font-black text-green-400 uppercase tracking-widest leading-none">Total Validé</p>
-                <h2 className="text-[10px] font-black text-green-400 truncate">{stats.validatedSum.toLocaleString()} F</h2>
+              <div className="bg-blue-500/10 border border-blue-500/30 p-2.5 rounded-2xl h-20 flex flex-col justify-between">
+                <p className="text-[6px] font-black text-blue-400 uppercase tracking-widest leading-none">Total Validé</p>
+                <h2 className="text-[10px] font-black text-blue-400 truncate">{stats.validatedSum.toLocaleString()} F</h2>
               </div>
 
-              <div className="bg-blue-400/10 border border-blue-400/30 p-2.5 rounded-2xl h-20 flex flex-col justify-between">
-                <p className="text-[6px] font-black text-blue-300 uppercase tracking-widest leading-none">Dépôts Validés</p>
-                <h2 className="text-[10px] font-black text-blue-300 truncate">{stats.validatedDepositsSum.toLocaleString()} F</h2>
+              <div className="bg-yellow-400/5 border border-yellow-400/20 p-2.5 rounded-2xl h-20 flex flex-col justify-between">
+                <p className="text-[6px] font-black text-yellow-500 uppercase tracking-widest leading-none">Dépôts OK</p>
+                <h2 className="text-[10px] font-black text-yellow-500 truncate">{stats.validatedDepositsSum.toLocaleString()} F</h2>
               </div>
 
               <div className="bg-red-500/10 border border-red-500/30 p-2.5 rounded-2xl h-20 flex flex-col justify-between">
@@ -144,7 +147,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ requests, messages, all
                 <button 
                   key={t} 
                   onClick={() => setRequestFilter(t as RequestType)} 
-                  className={`flex-1 py-3 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all ${requestFilter === t ? 'bg-yellow-400 text-[#081a2b] shadow-lg' : 'bg-white/5 text-white/30 border border-white/5'}`}
+                  className={`flex-1 py-3 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all ${requestFilter === t ? (t === 'Dépôt' ? 'bg-blue-600 text-white shadow-lg' : 'bg-yellow-400 text-[#081a2b] shadow-lg') : 'bg-white/5 text-white/30 border border-white/5'}`}
                 >
                   {t}s
                 </button>
@@ -191,7 +194,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ requests, messages, all
                 <input 
                   type="text" 
                   placeholder="Rechercher nom ou téléphone..." 
-                  className="w-full bg-white/5 border border-white/10 py-3 pl-12 pr-4 rounded-2xl outline-none focus:border-yellow-400/50 text-xs font-bold"
+                  className="w-full bg-white/5 border border-white/10 py-3 pl-12 pr-4 rounded-2xl outline-none focus:border-blue-400/50 text-xs font-bold"
                   value={searchUser}
                   onChange={e => setSearchUser(e.target.value)}
                 />
@@ -292,7 +295,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ requests, messages, all
                     <h3 className="text-lg font-black uppercase tracking-tight">{selectedRequest.userName}</h3>
                     <p className="text-[9px] text-white/40 font-bold">{selectedRequest.userPhone}</p>
                  </div>
-                 <button onClick={() => setSelectedRequest(null)} className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-lg"><i className="fas fa-times"></i></button>
+                 <button onClick={() => setSelectedRequest(null)} className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-lg active:scale-90 transition-all"><i className="fas fa-times"></i></button>
               </div>
               <div className="grid grid-cols-2 gap-3">
                  <div className="bg-white/5 p-4 rounded-2xl border border-white/5 text-center">
@@ -305,13 +308,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ requests, messages, all
                  </div>
               </div>
               <div className="bg-white/5 p-4 rounded-2xl space-y-2">
-                 <div className="flex justify-between text-[10px]"><span className="opacity-40 uppercase">Bookmaker</span><span className="font-black text-white">{selectedRequest.bookmaker || 'N/A'}</span></div>
-                 <div className="flex justify-between text-[10px]"><span className="opacity-40 uppercase">ID Joueur</span><span className="font-black text-white">{selectedRequest.bookmakerId || 'N/A'}</span></div>
+                 <div className="flex justify-between text-[10px]"><span className="opacity-40 uppercase font-bold">Bookmaker</span><span className="font-black text-white">{selectedRequest.bookmaker || 'N/A'}</span></div>
+                 <div className="flex justify-between text-[10px]"><span className="opacity-40 uppercase font-bold">ID Joueur</span><span className="font-black text-white tracking-widest">{selectedRequest.bookmakerId || 'N/A'}</span></div>
                  {selectedRequest.withdrawCode && <div className="flex justify-between text-[10px] bg-yellow-400/10 p-2 rounded-lg mt-2"><span className="font-black text-yellow-400 uppercase tracking-widest text-[8px]">Code Retrait</span><span className="font-black text-yellow-400 tracking-[0.2em]">{selectedRequest.withdrawCode}</span></div>}
               </div>
               {selectedRequest.proofImage && (
-                <div className="rounded-2xl overflow-hidden border border-white/10 bg-black/40">
+                <div className="relative group rounded-2xl overflow-hidden border border-white/10 bg-black/40">
+                   <p className="absolute top-2 left-2 z-10 text-[7px] font-black bg-black/60 px-2 py-0.5 rounded uppercase tracking-widest text-white/60">Preuve de paiement</p>
                    <img src={selectedRequest.proofImage} className="w-full h-48 object-contain" alt="Proof" />
+                   <a 
+                     href={selectedRequest.proofImage} 
+                     download={`preuve-${selectedRequest.userName}-${selectedRequest.type}.png`}
+                     className="absolute bottom-3 right-3 w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-lg active:scale-90 transition-all z-20"
+                     title="Télécharger la preuve"
+                   >
+                     <i className="fas fa-download"></i>
+                   </a>
                 </div>
               )}
               <div className="flex gap-3 pt-2">
@@ -331,19 +343,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ requests, messages, all
       )}
 
       <nav className="fixed bottom-0 left-0 right-0 flex justify-around items-center py-4 z-[100] bg-[#04111d] border-t border-white/5 rounded-t-[2rem] shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
-        <button onClick={() => setActiveSubView('dashboard')} className={`flex flex-col items-center gap-1 transition-all ${activeSubView === 'dashboard' ? 'text-yellow-400 scale-105' : 'text-white/30'}`}>
+        <button onClick={() => setActiveSubView('dashboard')} className={`flex flex-col items-center gap-1 transition-all ${activeSubView === 'dashboard' ? 'text-blue-400 scale-105' : 'text-white/30'}`}>
           <i className="fas fa-chart-pie text-lg"></i>
           <span className="text-[7px] font-black uppercase tracking-tighter">Stats</span>
         </button>
-        <button onClick={() => setActiveSubView('users')} className={`flex flex-col items-center gap-1 transition-all ${activeSubView === 'users' ? 'text-yellow-400 scale-105' : 'text-white/30'}`}>
+        <button onClick={() => setActiveSubView('users')} className={`flex flex-col items-center gap-1 transition-all ${activeSubView === 'users' ? 'text-blue-400 scale-105' : 'text-white/30'}`}>
           <i className="fas fa-user-group text-lg"></i>
           <span className="text-[7px] font-black uppercase tracking-tighter">Clients</span>
         </button>
-        <button onClick={() => setActiveSubView('support')} className={`flex flex-col items-center gap-1 transition-all ${activeSubView === 'support' ? 'text-yellow-400 scale-105' : 'text-white/30'}`}>
+        <button onClick={() => setActiveSubView('support')} className={`flex flex-col items-center gap-1 transition-all ${activeSubView === 'support' ? 'text-blue-400 scale-105' : 'text-white/30'}`}>
           <i className="fas fa-message text-lg"></i>
           <span className="text-[7px] font-black uppercase tracking-tighter">Support</span>
         </button>
-        <button onClick={() => setActiveSubView('archives')} className={`flex flex-col items-center gap-1 transition-all ${activeSubView === 'archives' ? 'text-yellow-400 scale-105' : 'text-white/30'}`}>
+        <button onClick={() => setActiveSubView('archives')} className={`flex flex-col items-center gap-1 transition-all ${activeSubView === 'archives' ? 'text-blue-400 scale-105' : 'text-white/30'}`}>
           <i className="fas fa-clock-rotate-left text-lg"></i>
           <span className="text-[7px] font-black uppercase tracking-tighter">Archives</span>
         </button>

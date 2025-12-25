@@ -25,20 +25,6 @@ const Banner: React.FC = () => {
               src={banner.image} 
               alt={`Promo ${banner.id}`} 
               className="w-full h-full object-cover"
-              onError={(e) => {
-                // Fallback si l'image locale dans banners/ n'existe pas
-                e.currentTarget.style.display = 'none';
-                const parent = e.currentTarget.parentElement;
-                if (parent) {
-                  parent.innerHTML = `
-                    <div class="w-full h-full flex flex-col items-center justify-center bg-blue-600/30 text-white/30 p-8 text-center border-b border-white/5">
-                      <i class="fas fa-image text-5xl mb-4"></i>
-                      <p class="text-[10px] font-black uppercase tracking-widest px-4">Placez l'image dans le dossier 'banners/'</p>
-                      <p class="text-[8px] font-bold opacity-50 mt-2 italic">${banner.image}</p>
-                    </div>
-                  `;
-                }
-              }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-blue-900/40 via-transparent to-transparent"></div>
           </div>

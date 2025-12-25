@@ -109,11 +109,11 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateRegister }) => {
 
       <div className="bg-white/5 backdrop-blur-md p-6 rounded-[2.5rem] border border-white/10 shadow-2xl mb-10">
         <div className="flex p-1 bg-black/20 rounded-2xl mb-8">
-          <button onClick={() => { setIsAdminMode(false); setError(''); }} className={`flex-1 py-3 rounded-xl flex items-center justify-center gap-2 transition-all ${!isAdminMode ? 'bg-yellow-400 text-[#081a2b] shadow-md font-black' : 'text-white/40 font-bold'}`}>
+          <button onClick={() => { setIsAdminMode(false); setError(''); }} className={`flex-1 py-3 rounded-xl flex items-center justify-center gap-2 transition-all ${!isAdminMode ? 'bg-blue-600 text-white shadow-md font-black' : 'text-white/40 font-bold'}`}>
             <i className="fas fa-user-circle text-xs"></i>
             <span className="text-[10px] uppercase tracking-widest">Client</span>
           </button>
-          <button onClick={() => { setIsAdminMode(true); setError(''); }} className={`flex-1 py-3 rounded-xl flex items-center justify-center gap-2 transition-all ${isAdminMode ? 'bg-yellow-400 text-[#081a2b] shadow-md font-black' : 'text-white/40 font-bold'}`}>
+          <button onClick={() => { setIsAdminMode(true); setError(''); }} className={`flex-1 py-3 rounded-xl flex items-center justify-center gap-2 transition-all ${isAdminMode ? 'bg-blue-600 text-white shadow-md font-black' : 'text-white/40 font-bold'}`}>
             <i className="fas fa-shield-alt text-xs"></i>
             <span className="text-[10px] uppercase tracking-widest">Admin</span>
           </button>
@@ -125,7 +125,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateRegister }) => {
               {isAdminMode ? 'Identifiant Admin' : 'Nom d\'utilisateur'}
             </label>
             <div className="relative group">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-yellow-400 transition-colors">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-blue-400 transition-colors">
                 <i className={`fas ${isAdminMode ? 'fa-id-badge' : 'fa-user'}`}></i>
               </span>
               <input 
@@ -133,7 +133,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateRegister }) => {
                 value={identifier} 
                 onChange={e => setIdentifier(e.target.value)} 
                 placeholder={isAdminMode ? "ID Admin" : "Votre nom complet"} 
-                className="w-full py-4 pl-12 pr-4 bg-white/5 text-white placeholder:text-white/10 rounded-2xl outline-none border border-white/5 focus:border-yellow-400/50 font-bold transition-all" 
+                className="w-full py-4 pl-12 pr-4 bg-white/5 text-white placeholder:text-white/10 rounded-2xl outline-none border border-white/5 focus:border-blue-500/50 font-bold transition-all" 
                 disabled={loading} 
               />
             </div>
@@ -142,7 +142,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateRegister }) => {
           <div className="space-y-1.5">
             <label className="block text-[9px] font-black text-white/40 uppercase tracking-widest px-2">Mot de passe</label>
             <div className="relative group">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-yellow-400 transition-colors">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-blue-400 transition-colors">
                 <i className="fas fa-lock"></i>
               </span>
               <input 
@@ -150,7 +150,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateRegister }) => {
                 value={password} 
                 onChange={e => setPassword(e.target.value)} 
                 placeholder="••••••••" 
-                className="w-full py-4 pl-12 pr-4 bg-white/5 text-white placeholder:text-white/10 rounded-2xl outline-none border border-white/5 focus:border-yellow-400/50 font-bold transition-all" 
+                className="w-full py-4 pl-12 pr-4 bg-white/5 text-white placeholder:text-white/10 rounded-2xl outline-none border border-white/5 focus:border-blue-500/50 font-bold transition-all" 
                 disabled={loading} 
               />
             </div>
@@ -158,7 +158,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateRegister }) => {
 
           {error && <p className="text-red-400 text-center text-[10px] font-black uppercase tracking-widest bg-red-500/10 py-3 rounded-xl border border-red-500/20">{error}</p>}
 
-          <button type="submit" disabled={loading} className="w-full bg-yellow-400 text-[#081a2b] font-black py-5 rounded-[2rem] shadow-xl active:scale-95 disabled:opacity-50 uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3">
+          <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white font-black py-5 rounded-[2rem] shadow-xl active:scale-95 disabled:opacity-50 uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 border border-blue-400/20">
             {loading ? <i className="fas fa-circle-notch animate-spin"></i> : <><i className="fas fa-sign-in-alt"></i> SE CONNECTER</>}
           </button>
 

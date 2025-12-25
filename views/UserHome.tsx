@@ -22,12 +22,12 @@ const UserHome: React.FC<UserHomeProps> = ({ user, onDeposit, onWithdraw, onBuyC
             <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`} alt="Avatar" className="w-full h-full" />
           </div>
           <div>
-            <p className="text-white/40 text-[9px] font-black uppercase tracking-widest">Bienvenue sur Recharge+</p>
+            <p className="text-white/40 text-[9px] font-black uppercase tracking-widest">Compte Client</p>
             <h3 className="text-white font-black text-sm leading-tight">{user.name}</h3>
           </div>
         </div>
-        <button onClick={onLogout} className="text-white/40 hover:text-red-400 transition-colors p-2">
-          <i className="fas fa-sign-out-alt text-lg"></i>
+        <button onClick={onLogout} className="w-10 h-10 flex items-center justify-center bg-red-500/10 text-red-500 rounded-xl active:scale-90 transition-all">
+          <i className="fas fa-power-off text-sm"></i>
         </button>
       </div>
 
@@ -39,33 +39,33 @@ const UserHome: React.FC<UserHomeProps> = ({ user, onDeposit, onWithdraw, onBuyC
         <div className="w-full space-y-4 max-w-xs mb-10">
           <button 
             onClick={onDeposit} 
-            className="w-full bg-[#1d4ed8] text-white font-black py-5 rounded-[2rem] shadow-xl shadow-blue-900/40 active:scale-95 transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-3 border border-blue-400/20"
+            className="w-full bg-blue-600 text-white font-black py-5 rounded-[2.2rem] shadow-xl shadow-blue-900/40 active:scale-95 transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-3 border border-blue-400/20"
           >
-            <i className="fas fa-plus-circle text-lg"></i> Effectuer un Dépôt
+            <i className="fas fa-arrow-down-long text-yellow-400"></i> Effectuer un Dépôt
           </button>
           
           <button 
             onClick={onWithdraw} 
-            className="w-full bg-[#facc15] text-[#081a2b] font-black py-5 rounded-[2rem] shadow-xl shadow-yellow-900/40 active:scale-95 transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-3"
+            className="w-full bg-yellow-400 text-[#081a2b] font-black py-5 rounded-[2.2rem] shadow-xl shadow-yellow-900/40 active:scale-95 transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-3"
           >
-            <i className="fas fa-minus-circle text-lg"></i> Effectuer un Retrait
+            <i className="fas fa-arrow-up-long text-blue-700"></i> Effectuer un Retrait
           </button>
 
           <button 
             onClick={onBuyCrypto} 
-            className="w-full bg-[#10b981] text-white font-black py-5 rounded-[2rem] shadow-xl shadow-emerald-900/40 active:scale-95 transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-3 border border-emerald-400/20"
+            className="w-full bg-emerald-600 text-white font-black py-5 rounded-[2.2rem] shadow-xl shadow-emerald-900/40 active:scale-95 transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-3 border border-emerald-400/20"
           >
-            <i className="fab fa-bitcoin text-lg"></i> Achat Crypto
+            <i className="fab fa-bitcoin text-lg text-yellow-400"></i> Achat Crypto
           </button>
         </div>
 
         <div className="w-full space-y-3 px-2">
            {[
-             { label: 'Assistance Directe', icon: 'fa-headset', color: 'blue', desc: 'Une question ? Chattez avec nous.', onClick: onChat },
-             { label: 'Historique Détaillé', icon: 'fa-clock-rotate-left', color: 'gray', desc: 'Suivez vos dernières transactions.', onClick: () => {} }
+             { label: 'Support 24/7', icon: 'fa-headset', color: 'blue', desc: 'Besoin d\'aide ? Discutons.', onClick: onChat },
+             { label: 'Historique', icon: 'fa-history', color: 'gray', desc: 'Consultez vos transactions.', onClick: () => {} }
            ].map((item, idx) => (
              <div key={idx} onClick={item.onClick} className="flex items-center gap-4 p-4 bg-white/5 rounded-3xl active:bg-white/10 transition-colors cursor-pointer group border border-white/5">
-               <div className={`w-12 h-12 rounded-2xl bg-white/10 shadow-sm flex items-center justify-center text-lg ${item.color === 'blue' ? 'text-blue-300' : 'text-white/40'}`}>
+               <div className={`w-12 h-12 rounded-2xl bg-white/10 shadow-sm flex items-center justify-center text-lg ${item.color === 'blue' ? 'text-blue-300' : 'text-yellow-400'}`}>
                  <i className={`fas ${item.icon}`}></i>
                </div>
                <div className="flex-1">
@@ -78,12 +78,8 @@ const UserHome: React.FC<UserHomeProps> = ({ user, onDeposit, onWithdraw, onBuyC
         </div>
       </div>
       
-      {/* Bouton Chat flottant adapté */}
       <div className="fixed bottom-28 right-6 group z-40">
-        <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full border-2 border-[#081a2b] flex items-center justify-center">
-          <span className="text-[8px] text-white font-black">!</span>
-        </div>
-        <button onClick={onChat} className="w-16 h-16 bg-blue-600 text-white rounded-[1.8rem] shadow-2xl flex items-center justify-center text-2xl border-4 border-white/10 active:scale-90 transition-transform">
+        <button onClick={onChat} className="w-16 h-16 bg-blue-600 text-white rounded-[1.8rem] shadow-2xl flex items-center justify-center text-2xl border-4 border-yellow-400/20 active:scale-90 transition-transform">
           <i className="fas fa-comment-dots"></i>
         </button>
       </div>

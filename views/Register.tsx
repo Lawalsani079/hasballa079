@@ -120,14 +120,14 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onNavigateLogin }) => {
             <div className="space-y-1.5">
               <label className="block text-[9px] font-black text-white/40 uppercase tracking-widest px-2">Nom Complet (Identifiant)</label>
               <div className="relative group">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-yellow-400 transition-colors">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-blue-400 transition-colors">
                   <i className="fas fa-user-tag"></i>
                 </span>
                 <input 
                   type="text" 
                   required 
                   placeholder="Utilisé pour vous connecter" 
-                  className="w-full bg-white/5 py-4 pl-12 pr-4 rounded-2xl text-white font-bold border border-white/5 outline-none focus:border-yellow-400 transition-all" 
+                  className="w-full bg-white/5 py-4 pl-12 pr-4 rounded-2xl text-white font-bold border border-white/5 outline-none focus:border-blue-500 transition-all" 
                   value={formData.name} 
                   onChange={e => setFormData({...formData, name: e.target.value})} 
                   disabled={loading} 
@@ -140,7 +140,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onNavigateLogin }) => {
               <div className="flex gap-2">
                 <div className="bg-white/5 px-4 flex items-center rounded-2xl text-white/40 border border-white/5 font-black text-xs">+227</div>
                 <div className="relative flex-1 group">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-yellow-400 transition-colors">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-blue-400 transition-colors">
                     <i className="fas fa-phone"></i>
                   </span>
                   <input 
@@ -148,7 +148,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onNavigateLogin }) => {
                     required 
                     maxLength={8}
                     placeholder="91xxxxxx" 
-                    className="w-full bg-white/5 py-4 pl-12 pr-4 rounded-2xl text-white font-bold border border-white/5 outline-none focus:border-yellow-400 transition-all" 
+                    className="w-full bg-white/5 py-4 pl-12 pr-4 rounded-2xl text-white font-bold border border-white/5 outline-none focus:border-blue-500 transition-all" 
                     value={formData.phone} 
                     onChange={e => setFormData({...formData, phone: e.target.value.replace(/\D/g, '')})} 
                     disabled={loading} 
@@ -160,14 +160,14 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onNavigateLogin }) => {
             <div className="space-y-1.5">
               <label className="block text-[9px] font-black text-white/40 uppercase tracking-widest px-2">Mot de passe</label>
               <div className="relative group">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-yellow-400 transition-colors">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-blue-400 transition-colors">
                   <i className="fas fa-lock"></i>
                 </span>
                 <input 
                   type="password" 
                   required 
                   placeholder="••••••••" 
-                  className="w-full bg-white/5 py-4 pl-12 pr-4 rounded-2xl text-white font-bold border border-white/5 outline-none focus:border-yellow-400 transition-all" 
+                  className="w-full bg-white/5 py-4 pl-12 pr-4 rounded-2xl text-white font-bold border border-white/5 outline-none focus:border-blue-500 transition-all" 
                   value={formData.password} 
                   onChange={e => setFormData({...formData, password: e.target.value})} 
                   disabled={loading} 
@@ -197,7 +197,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onNavigateLogin }) => {
 
             {error && <p className="text-red-400 text-center text-[10px] font-black uppercase tracking-widest bg-red-500/10 py-3 rounded-xl border border-red-500/20">{error}</p>}
 
-            <button type="submit" disabled={loading} className="w-full bg-yellow-400 text-[#081a2b] font-black py-5 rounded-[2rem] shadow-xl active:scale-95 disabled:opacity-50 uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3">
+            <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white font-black py-5 rounded-[2rem] shadow-xl active:scale-95 disabled:opacity-50 uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 border border-blue-400/20">
               {loading ? <i className="fas fa-circle-notch animate-spin"></i> : <><i className="fas fa-user-check"></i> CRÉER MON COMPTE</>}
             </button>
             

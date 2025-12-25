@@ -82,7 +82,7 @@ const WithdrawForm: React.FC<WithdrawFormProps> = ({ user, onBack, onComplete })
             onClick={onComplete}
             className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-black/20 active:scale-95 transition-all text-xs uppercase tracking-widest"
           >
-            Historique des gains
+            Suivre l'opération
           </button>
           <button 
             onClick={onBack}
@@ -105,8 +105,8 @@ const WithdrawForm: React.FC<WithdrawFormProps> = ({ user, onBack, onComplete })
         <div className="flex flex-col items-center">
           <h2 className="text-white font-black text-sm uppercase tracking-widest">Retrait de fonds</h2>
           <div className="flex gap-1.5 mt-2">
-            <div className={`h-1 rounded-full transition-all duration-300 ${step >= 1 ? 'w-6 bg-yellow-400' : 'w-2 bg-white/10'}`}></div>
-            <div className={`h-1 rounded-full transition-all duration-300 ${step >= 2 ? 'w-6 bg-yellow-400' : 'w-2 bg-white/10'}`}></div>
+            <div className={`h-1 rounded-full transition-all duration-300 ${step >= 1 ? 'w-6 bg-blue-500' : 'w-2 bg-white/10'}`}></div>
+            <div className={`h-1 rounded-full transition-all duration-300 ${step >= 2 ? 'w-6 bg-blue-500' : 'w-2 bg-white/10'}`}></div>
           </div>
         </div>
         <div className="w-10"></div>
@@ -132,13 +132,13 @@ const WithdrawForm: React.FC<WithdrawFormProps> = ({ user, onBack, onComplete })
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-white/40 uppercase tracking-widest px-1">Montant à retirer</label>
                 <div className="relative group">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-yellow-400 transition-colors">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-blue-400 transition-colors">
                     <i className="fas fa-money-bill-wave"></i>
                   </div>
                   <input 
                     type="number" 
                     placeholder="Montant en FCFA" 
-                    className="w-full bg-white/5 py-4 pl-12 pr-4 rounded-2xl outline-none border border-white/5 focus:border-yellow-400 text-white font-bold transition-all" 
+                    className="w-full bg-white/5 py-4 pl-12 pr-4 rounded-2xl outline-none border border-white/5 focus:border-blue-500 text-white font-bold transition-all" 
                     value={formData.amount} 
                     onChange={e => setFormData({...formData, amount: e.target.value})} 
                   />
@@ -149,7 +149,7 @@ const WithdrawForm: React.FC<WithdrawFormProps> = ({ user, onBack, onComplete })
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-white/40 uppercase tracking-widest px-1">Bookmaker</label>
                   <select 
-                    className="w-full bg-white/5 py-4 px-4 rounded-2xl outline-none border border-white/5 focus:border-yellow-400 font-bold text-white transition-all appearance-none" 
+                    className="w-full bg-white/5 py-4 px-4 rounded-2xl outline-none border border-white/5 focus:border-blue-500 font-bold text-white transition-all appearance-none" 
                     value={formData.bookmaker} 
                     onChange={e => setFormData({...formData, bookmaker: e.target.value})}
                   >
@@ -160,7 +160,7 @@ const WithdrawForm: React.FC<WithdrawFormProps> = ({ user, onBack, onComplete })
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-white/40 uppercase tracking-widest px-1">Recevoir sur</label>
                   <select 
-                    className="w-full bg-white/5 py-4 px-4 rounded-2xl outline-none border border-white/5 focus:border-yellow-400 font-bold text-white transition-all appearance-none" 
+                    className="w-full bg-white/5 py-4 px-4 rounded-2xl outline-none border border-white/5 focus:border-blue-500 font-bold text-white transition-all appearance-none" 
                     value={formData.method} 
                     onChange={e => setFormData({...formData, method: e.target.value})}
                   >
@@ -173,13 +173,13 @@ const WithdrawForm: React.FC<WithdrawFormProps> = ({ user, onBack, onComplete })
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-white/40 uppercase tracking-widest px-1">Code de retrait</label>
                 <div className="relative group">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-yellow-400 transition-colors">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-blue-400 transition-colors">
                     <i className="fas fa-key"></i>
                   </div>
                   <input 
                     type="text" 
                     placeholder="Entrez votre code" 
-                    className="w-full bg-white/5 py-4 pl-12 pr-4 rounded-2xl outline-none border border-white/5 focus:border-yellow-400 text-white font-black transition-all uppercase tracking-widest" 
+                    className="w-full bg-white/5 py-4 pl-12 pr-4 rounded-2xl outline-none border border-white/5 focus:border-blue-500 text-white font-black transition-all uppercase tracking-widest" 
                     value={formData.withdrawCode} 
                     onChange={e => setFormData({...formData, withdrawCode: e.target.value.toUpperCase()})} 
                   />
@@ -191,7 +191,7 @@ const WithdrawForm: React.FC<WithdrawFormProps> = ({ user, onBack, onComplete })
 
             <button 
               onClick={handleNext} 
-              className="w-full bg-yellow-400 text-[#081a2b] font-black py-5 rounded-2xl shadow-xl shadow-black/20 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-[0.2em] text-xs"
+              className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-black/20 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-[0.2em] text-xs"
             >
               Étape suivante <i className="fas fa-arrow-right text-[10px]"></i>
             </button>
@@ -226,7 +226,7 @@ const WithdrawForm: React.FC<WithdrawFormProps> = ({ user, onBack, onComplete })
               <label className="block text-[10px] font-black text-white/40 uppercase tracking-widest px-1">Capture du code (optionnel)</label>
               
               {!formData.proofImage ? (
-                <label className="flex flex-col items-center justify-center bg-white/5 border-2 border-dashed border-white/10 rounded-[2rem] h-32 text-white/40 active:bg-white/10 active:border-yellow-400 transition-all cursor-pointer">
+                <label className="flex flex-col items-center justify-center bg-white/5 border-2 border-dashed border-white/10 rounded-[2rem] h-32 text-white/40 active:bg-white/10 active:border-blue-400 transition-all cursor-pointer">
                   <i className="fas fa-camera-retro text-2xl mb-2"></i>
                   <span className="text-[9px] font-black uppercase tracking-widest">Joindre une capture</span>
                   <input type="file" capture="environment" accept="image/*" className="hidden" onChange={handleImageUpload} />
