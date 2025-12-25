@@ -31,12 +31,19 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateRegister }) => {
     try {
       if (isAdminMode) {
         if (identifier.trim().toLowerCase() === ADMIN_CREDENTIALS.id && password.trim() === ADMIN_CREDENTIALS.password) {
-          onLogin({ id: 'admin-1', name: 'Champion Admin', phone: '000', role: 'admin', referralCode: '', referralBalance: 0, lastActive: Date.now() });
+          onLogin({ 
+            id: 'admin-1', 
+            name: 'Champion Admin', 
+            phone: '000', 
+            role: 'admin', 
+            referralCode: '', 
+            referralBalance: 0, 
+            lastActive: Date.now() 
+          });
         } else {
           setError('Identifiants admin incorrects');
         }
       } else {
-        // Recherche par Nom d'utilisateur (Name)
         const q = query(
           collection(db, "users"), 
           where("name", "==", identifier.trim()), 
@@ -46,14 +53,23 @@ const Login: React.FC<LoginProps> = ({ onLogin, onNavigateRegister }) => {
         
         if (!querySnapshot.empty) {
           const doc = querySnapshot.docs[0];
-          const userData = doc.data();
-          onLogin({ id: doc.id, ...userData } as User);
+          const d = doc.data();
+          // Explicit mapping to POJO (Plain Old JavaScript Objects) to avoid circular errors
+          onLogin({ 
+            id: doc.id, 
+            name: String(d.name),
+            phone: String(d.phone),
+            role: d.role,
+            referralCode: String(d.referralCode),
+            referralBalance: Number(d.referralBalance || 0),
+            lastActive: Number(d.lastActive || Date.now())
+          } as User);
         } else {
           setError('Nom ou mot de passe incorrect');
         }
       }
     } catch (err: any) {
-      console.error(err);
+      console.error("Login attempt failed:", err);
       setError('Erreur de connexion. Vérifiez votre internet.');
     } finally {
       setLoading(false);

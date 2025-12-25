@@ -38,7 +38,6 @@ const App: React.FC = () => {
   useEffect(() => {
     currentUserRef.current = currentUser;
     
-    // Heartbeat System: Update lastActive every 2 minutes if user is logged in
     if (currentUser && currentUser.role === 'user') {
       const updateActivity = async () => {
         try {
@@ -54,9 +53,14 @@ const App: React.FC = () => {
     }
   }, [currentUser]);
 
-  const triggerInAppNotification = (userName: string, type: string, text?: string) => {
+  const triggerInAppNotification = (userName: any, type: any, text?: any) => {
+    const safeUserName = String(userName || 'Client');
+    const safeType = String(type || 'Action');
+    const safeText = text ? String(text) : undefined;
+    
     const id = Math.random().toString(36).substr(2, 9);
-    setActiveNotification({ id, userName, type, text });
+    setActiveNotification({ id, userName: safeUserName, type: safeType, text: safeText });
+    
     if (currentUserRef.current?.role === 'admin') playNotificationSound();
     setTimeout(() => { setActiveNotification(prev => prev?.id === id ? null : prev); }, 5000);
   };
@@ -83,43 +87,95 @@ const App: React.FC = () => {
       splashTimer = window.setTimeout(() => setCurrentView('login'), 2500);
     }
 
-    const unsubRequests = onSnapshot(query(collection(db, "requests"), orderBy("createdAt", "desc")), (snap) => {
-      const reqs: TransactionRequest[] = [];
-      snap.forEach(doc => reqs.push({ ...doc.data(), id: doc.id } as TransactionRequest));
-      if (!isInitialSync.current && currentUserRef.current?.role === 'admin') {
-        snap.docChanges().forEach(change => {
-          if (change.type === 'added') triggerInAppNotification(change.doc.data().userName, change.doc.data().type);
+    // Unsubscribe references
+    let unsubReq: (() => void) | undefined;
+    let unsubMsg: (() => void) | undefined;
+    let unsubUsr: (() => void) | undefined;
+
+    const setupListeners = () => {
+      unsubReq = onSnapshot(query(collection(db, "requests"), orderBy("createdAt", "desc")), (snap) => {
+        const reqs: TransactionRequest[] = [];
+        snap.forEach(doc => {
+          const d = doc.data();
+          // Explicit mapping to ensure POJO (Plain Old JavaScript Objects) in state
+          reqs.push({
+            id: doc.id,
+            userId: String(d.userId),
+            userName: String(d.userName),
+            userPhone: String(d.userPhone),
+            type: d.type,
+            amount: String(d.amount),
+            method: String(d.method || ''),
+            bookmaker: d.bookmaker ? String(d.bookmaker) : undefined,
+            bookmakerId: d.bookmakerId ? String(d.bookmakerId) : undefined,
+            withdrawCode: d.withdrawCode ? String(d.withdrawCode) : undefined,
+            cryptoType: d.cryptoType ? String(d.cryptoType) : undefined,
+            walletAddress: d.walletAddress ? String(d.walletAddress) : undefined,
+            proofImage: d.proofImage ? String(d.proofImage) : undefined,
+            status: d.status,
+            createdAt: Number(d.createdAt)
+          });
         });
-      }
-      setRequests(reqs);
-    });
 
-    const unsubMessages = onSnapshot(query(collection(db, "messages"), orderBy("createdAt", "asc")), (snap) => {
-      const msgs: ChatMessage[] = [];
-      snap.forEach(doc => msgs.push({ ...doc.data(), id: doc.id } as ChatMessage));
-      setMessages(msgs);
-    });
+        if (!isInitialSync.current && currentUserRef.current?.role === 'admin') {
+          snap.docChanges().forEach(change => {
+            if (change.type === 'added') {
+              const d = change.doc.data();
+              triggerInAppNotification(d.userName, d.type);
+            }
+          });
+        }
+        setRequests(reqs);
+      }, (err) => console.error("Firestore Request Error:", err));
 
-    // Listen to all users for admin tracking
-    const unsubUsers = onSnapshot(collection(db, "users"), (snap) => {
-      const users: User[] = [];
-      snap.forEach(doc => users.push({ ...doc.data(), id: doc.id } as User));
-      setAllUsers(users);
-      
-      // Update local current user data if changed in DB (e.g. referral bonus)
-      if (currentUserRef.current) {
-        const updatedMe = users.find(u => u.id === currentUserRef.current?.id);
-        if (updatedMe) setCurrentUser(updatedMe);
-      }
-    });
+      unsubMsg = onSnapshot(query(collection(db, "messages"), orderBy("createdAt", "asc")), (snap) => {
+        const msgs: ChatMessage[] = [];
+        snap.forEach(doc => {
+          const d = doc.data();
+          msgs.push({
+            id: doc.id,
+            userId: String(d.userId),
+            userName: String(d.userName),
+            text: String(d.text),
+            isAdmin: Boolean(d.isAdmin),
+            createdAt: Number(d.createdAt)
+          });
+        });
+        setMessages(msgs);
+      }, (err) => console.error("Firestore Message Error:", err));
 
-    isInitialSync.current = false;
+      unsubUsr = onSnapshot(collection(db, "users"), (snap) => {
+        const usersList: User[] = [];
+        snap.forEach(doc => {
+          const d = doc.data();
+          usersList.push({
+            id: doc.id,
+            name: String(d.name),
+            phone: String(d.phone),
+            role: d.role,
+            referralCode: String(d.referralCode),
+            referralBalance: Number(d.referralBalance || 0),
+            lastActive: Number(d.lastActive || Date.now())
+          });
+        });
+        setAllUsers(usersList);
+        
+        if (currentUserRef.current) {
+          const updatedMe = usersList.find(u => u.id === currentUserRef.current?.id);
+          if (updatedMe) setCurrentUser(updatedMe);
+        }
+      }, (err) => console.error("Firestore User Error:", err));
+
+      isInitialSync.current = false;
+    };
+
+    setupListeners();
 
     return () => {
       if (splashTimer) clearTimeout(splashTimer);
-      unsubRequests();
-      unsubMessages();
-      unsubUsers();
+      if (unsubReq) unsubReq();
+      if (unsubMsg) unsubMsg();
+      if (unsubUsr) unsubUsr();
     };
   }, [currentView]);
 
