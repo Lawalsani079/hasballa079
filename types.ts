@@ -28,7 +28,20 @@ export interface TransactionRequest {
   walletAddress?: string;
   proofImage?: string;
   status: RequestStatus;
+  rejectionReason?: string;
   createdAt: number;
+}
+
+export interface AppNotification {
+  id: string;
+  userId: string;
+  title: string;
+  body: string;
+  type: 'success' | 'error' | 'info' | 'warning';
+  timestamp: number;
+  read: boolean;
+  link?: string;
+  isPush?: boolean; // Indique si elle doit déclencher une alerte sonore/vibreur
 }
 
 export interface ChatMessage {
@@ -36,7 +49,9 @@ export interface ChatMessage {
   userId: string;
   userName: string;
   text: string;
+  image?: string;
   isAdmin: boolean;
+  isAI?: boolean;
   createdAt: number;
 }
 

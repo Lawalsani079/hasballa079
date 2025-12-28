@@ -1,84 +1,178 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { collection, query, where, getDocs, doc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { db } from '../firebaseConfig';
 import { User } from '../types';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface ProfileProps {
   user: User;
   onLogout: () => void;
   onChat: () => void;
+  onNotify: () => void;
 }
 
-const Profile: React.FC<ProfileProps> = ({ user, onLogout, onChat }) => {
-  const [copied, setCopied] = useState(false);
+const Profile: React.FC<ProfileProps> = ({ user, onLogout, onChat, onNotify }) => {
+  const [loading, setLoading] = useState(false);
+  const [confirmingType, setConfirmingType] = useState<'requests' | 'messages' | null>(null);
+  const timerRef = useRef<number | null>(null);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(user.referralCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const clearData = async (collectionName: 'requests' | 'messages') => {
+    const label = collectionName === 'requests' ? "l'historique Niger" : "les discussions";
+    
+    // Étape 1 : Demander la confirmation visuelle
+    if (confirmingType !== collectionName) {
+      setConfirmingType(collectionName);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = window.setTimeout(() => setConfirmingType(null), 4000);
+      return;
+    }
+
+    // Étape 2 : Suppression effective
+    setConfirmingType(null);
+    setLoading(true);
+    try {
+      const q = query(collection(db, collectionName), where("userId", "==", user.id));
+      const snap = await getDocs(q);
+      
+      if (snap.empty) {
+        alert(`Aucune donnée à supprimer.`);
+        setLoading(false);
+        return;
+      }
+
+      const batch = writeBatch(db);
+      snap.docs.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+      
+      alert(`✅ Succès : ${label} vidé définitivement.`);
+    } catch (e: any) {
+      console.error(`Clear ${collectionName} Error:`, e.message);
+      alert("Erreur serveur lors de la suppression.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="flex-1 bg-[#081a2b] overflow-y-auto pb-32">
-      <div className="relative h-64 bg-gradient-to-br from-blue-600 to-blue-800 rounded-b-[4rem] flex flex-col items-center justify-center shadow-xl">
-        <div className="absolute top-10 right-6">
-           <div className="bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 flex items-center gap-2">
-             <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
-             <span className="text-white text-[9px] font-black uppercase">Vérifié</span>
-           </div>
+    <div className="flex-1 bg-white overflow-y-auto pb-32 no-scrollbar flex flex-col h-full animate-in fade-in">
+      <div className="px-6 pt-14 pb-6 flex items-center justify-between shrink-0">
+        <div>
+          <h2 className="text-slate-900 text-xl font-black uppercase tracking-tighter leading-none">Profil</h2>
+          <p className="text-[8px] font-black text-[#0047FF] uppercase tracking-[0.3em] mt-2">Niger Premium App</p>
         </div>
-        <div className="w-28 h-28 bg-white/10 rounded-[2.5rem] p-1.5 shadow-2xl backdrop-blur-xl border border-white/20">
-           <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`} alt="User" className="w-full h-full rounded-[2rem] bg-[#081a2b]/50" />
-        </div>
-        <div className="mt-4 text-center">
-          <h2 className="text-white text-xl font-black tracking-tight">{user.name}</h2>
-          <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest">{user.phone}</p>
-        </div>
+        <button onClick={onNotify} className="w-11 h-11 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 active:scale-90 relative border border-slate-100 shadow-sm">
+          <i className="fas fa-bell text-sm"></i>
+          <span className="absolute top-3.5 right-3.5 w-2 h-2 bg-[#0047FF] rounded-full border-2 border-white"></span>
+        </button>
       </div>
 
-      <div className="px-6 -mt-8 space-y-6">
-        {/* Referral Card */}
-        <div className="bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-[2.5rem] p-6 shadow-xl relative overflow-hidden group">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform"></div>
-          <div className="relative flex justify-between items-center mb-4">
-             <div>
-                <p className="text-[#081a2b]/60 text-[10px] font-black uppercase tracking-widest">Gains Parrainage</p>
-                <h3 className="text-[#081a2b] text-3xl font-black">{user.referralBalance || 0} <span className="text-sm">FCFA</span></h3>
-             </div>
-             <div className="w-12 h-12 bg-[#081a2b]/10 rounded-2xl flex items-center justify-center text-[#081a2b] text-xl">
-                <i className="fas fa-gift"></i>
-             </div>
+      <div className="px-6 space-y-6 flex-1">
+        {/* User Card */}
+        <div className="bg-[#0f172a] p-7 rounded-[3rem] flex items-center gap-5 shadow-2xl relative overflow-hidden border-b-8 border-[#0047FF]">
+          <div className="w-16 h-16 bg-[#0047FF] rounded-[2rem] flex items-center justify-center shadow-xl border-4 border-white/10 shrink-0">
+            <i className="fas fa-user-shield text-white text-2xl"></i>
           </div>
-          <div className="bg-[#081a2b] p-4 rounded-2xl flex items-center justify-between border border-white/5">
-             <div>
-                <p className="text-white/40 text-[8px] font-black uppercase mb-1">Mon Code</p>
-                <p className="text-white font-black tracking-widest">{user.referralCode}</p>
-             </div>
-             <button onClick={handleCopy} className="bg-yellow-400 text-[#081a2b] px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all active:scale-90">
-                {copied ? 'Copié !' : 'Partager'}
-             </button>
+          <div className="flex-1">
+            <h3 className="text-white font-black text-sm uppercase tracking-tight">{user.name}</h3>
+            <p className="text-[#FACC15] text-[9px] font-black uppercase tracking-widest mt-1">{user.phone}</p>
           </div>
-          <p className="mt-4 text-[#081a2b]/60 text-[9px] font-bold text-center uppercase tracking-widest">Gagnez 500 FCFA pour chaque ami inscrit !</p>
-        </div>
-
-        <div className="bg-white/5 backdrop-blur-xl rounded-[2.5rem] p-6 border border-white/10">
-          <h3 className="text-white/20 text-[10px] font-black uppercase tracking-widest mb-4 px-2">Mon Compte</h3>
-          <div className="space-y-1">
-             <button className="w-full flex items-center gap-4 p-3 rounded-2xl active:bg-white/5 group">
-                <div className="w-11 h-11 bg-white/5 text-white rounded-2xl flex items-center justify-center border border-white/5"><i className="fas fa-shield-halved"></i></div>
-                <div className="flex-1 text-left"><p className="font-black text-white text-sm">Sécurité</p></div>
-                <i className="fas fa-chevron-right text-[10px] text-white/10"></i>
-             </button>
-             <button onClick={onChat} className="w-full flex items-center gap-4 p-3 rounded-2xl active:bg-white/5 group">
-                <div className="w-11 h-11 bg-white/5 text-blue-400 rounded-2xl flex items-center justify-center border border-white/5"><i className="fas fa-comments"></i></div>
-                <div className="flex-1 text-left"><p className="font-black text-white text-sm">Support</p></div>
-                <i className="fas fa-chevron-right text-[10px] text-white/10"></i>
-             </button>
+          <div className="absolute -bottom-4 -right-4 opacity-5">
+             <i className="fas fa-crown text-8xl text-white"></i>
           </div>
         </div>
 
-        <button onClick={onLogout} className="w-full bg-red-500/10 text-red-400 font-black py-5 rounded-[2.5rem] flex items-center justify-center gap-3 border border-red-500/20 active:scale-95 transition-all">
-          <i className="fas fa-power-off text-sm"></i> DÉCONNEXION
+        {/* Danger Zone Actions */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-4">
+            <h4 className="text-red-500 text-[9px] font-black uppercase tracking-[0.4em]">Zone Critique</h4>
+            <div className="h-[1px] flex-1 bg-red-100 ml-4 opacity-50"></div>
+          </div>
+          
+          <div className="bg-red-50/50 rounded-[3rem] p-3 space-y-3 border-2 border-red-50">
+            {/* Vider Transactions */}
+            <button 
+              disabled={loading}
+              onClick={() => clearData('requests')} 
+              className={`w-full flex items-center gap-4 p-5 rounded-[2.2rem] transition-all shadow-sm border ${
+                confirmingType === 'requests' 
+                ? 'bg-red-600 text-white border-red-700 animate-pulse' 
+                : 'bg-white text-slate-900 border-red-100'
+              }`}
+            >
+              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shadow-inner ${
+                confirmingType === 'requests' ? 'bg-white/20 text-white' : 'bg-red-50 text-red-500'
+              }`}>
+                <i className={`fas ${confirmingType === 'requests' ? 'fa-exclamation-triangle' : 'fa-history'} text-xs`}></i>
+              </div>
+              <div className="flex-1 text-left">
+                <span className={`block font-black text-[10px] uppercase tracking-tight ${confirmingType === 'requests' ? 'text-white' : 'text-slate-900'}`}>
+                  {confirmingType === 'requests' ? "Cliquez pour Confirmer" : "Vider Historique"}
+                </span>
+                <span className={`text-[7px] font-black uppercase tracking-widest ${confirmingType === 'requests' ? 'text-white/60' : 'text-red-400'}`}>
+                  {confirmingType === 'requests' ? "Action irréversible" : "Tout supprimer définitivement"}
+                </span>
+              </div>
+              {loading && confirmingType === 'requests' && <i className="fas fa-circle-notch animate-spin"></i>}
+            </button>
+            
+            {/* Vider Chat */}
+            <button 
+              disabled={loading}
+              onClick={() => clearData('messages')} 
+              className={`w-full flex items-center gap-4 p-5 rounded-[2.2rem] transition-all shadow-sm border ${
+                confirmingType === 'messages' 
+                ? 'bg-red-600 text-white border-red-700 animate-pulse' 
+                : 'bg-white text-slate-900 border-red-100'
+              }`}
+            >
+              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shadow-inner ${
+                confirmingType === 'messages' ? 'bg-white/20 text-white' : 'bg-red-50 text-red-500'
+              }`}>
+                <i className={`fas ${confirmingType === 'messages' ? 'fa-exclamation-triangle' : 'fa-comment-slash'} text-xs`}></i>
+              </div>
+              <div className="flex-1 text-left">
+                <span className={`block font-black text-[10px] uppercase tracking-tight ${confirmingType === 'messages' ? 'text-white' : 'text-slate-900'}`}>
+                  {confirmingType === 'messages' ? "Confirmation Finale" : "Supprimer Chat"}
+                </span>
+                <span className={`text-[7px] font-black uppercase tracking-widest ${confirmingType === 'messages' ? 'text-white/60' : 'text-red-400'}`}>
+                  {confirmingType === 'messages' ? "Vider toute la discussion" : "Effacer vos messages"}
+                </span>
+              </div>
+              {loading && confirmingType === 'messages' && <i className="fas fa-circle-notch animate-spin"></i>}
+            </button>
+          </div>
+        </div>
+
+        {/* Regular Actions */}
+        <div className="space-y-4">
+           <h4 className="text-slate-300 text-[9px] font-black uppercase tracking-[0.4em] px-4">Options</h4>
+           <div className="bg-slate-50 p-3 rounded-[3rem] space-y-2">
+             <button onClick={onChat} className="w-full flex items-center gap-4 p-5 rounded-[2.2rem] bg-white shadow-sm active:scale-95 transition-all">
+                <div className="w-11 h-11 bg-blue-50 text-[#0047FF] rounded-2xl flex items-center justify-center border border-blue-100">
+                  <i className="fas fa-headset text-sm"></i>
+                </div>
+                <span className="flex-1 text-left font-black text-slate-900 text-[10px] uppercase tracking-tight">Support Client 24/7</span>
+                <i className="fas fa-chevron-right text-[8px] text-slate-300"></i>
+             </button>
+           </div>
+        </div>
+
+        <button 
+          onClick={onLogout}
+          className="w-full mt-auto mb-10 bg-slate-900 text-[#FACC15] py-6 rounded-[2.5rem] flex items-center justify-center gap-4 active:scale-95 transition-all shadow-xl group border-b-4 border-slate-700"
+        >
+          <span className="font-black uppercase tracking-[0.2em] text-[10px]">Déconnexion Sécurisée</span>
+          <i className="fas fa-power-off text-xs group-active:animate-pulse"></i>
         </button>
+
+        <p className="text-center text-[7px] font-black text-slate-200 uppercase tracking-[0.6em] py-8">Champion Niger • Vers. 2.9.0</p>
       </div>
     </div>
   );

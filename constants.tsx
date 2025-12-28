@@ -1,49 +1,33 @@
 
 import { BannerItem } from './types';
+import { LOCAL_IMAGES } from './imageLibrary';
 
 export const COLORS = {
-  primary: '#1d4ed8', // Bleu Royal
-  secondary: '#facc15', // Jaune Or
-  accent: '#f97316', // Orange
-  success: '#2ecc71', // Vert Émeraude
-  danger: '#e74c3c', // Rouge Alerte
-  backgroundUser: '#081a2b',
-  backgroundAdmin: '#081a2b',
-  darkNav: '#04111d'
+  primary: '#0047FF', 
+  secondary: '#FACC15', 
+  accent: '#f97316', 
+  success: '#10b981', 
+  danger: '#ef4444', 
+  backgroundUser: '#FACC15', 
+  backgroundAdmin: '#FACC15', 
+  darkNav: '#ffffff'
+};
+
+export const ASSETS = {
+  logo: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEwMCAxMEwxNzggNTVWMTQ1TDEwMCAxOTBMMjIgMTQ1VjU1TDEwMCAxMFoiIGZpbGw9IiMwMDQ3RkYiLz48cGF0aCBkPSJNNjUgMTQwVjYwSDEwNUMxMjEuNTY5IDYwIDEzNSA3My40MzE1IDEzNSA5MEMxMzUgMTAxLjQyIDEyOC42MTUgMTExLjM0OCAxMTkuMjQxIDExNi41MUwxNDAgMTQwSDExNUw5Ny41IDEyMEg4NVYxNDBINjVaTTg1IDEwMEgxMDBDIDEwNS41MjMgMTAwIDExMCA5NS41MjI4IDExMCA5MEMxMTAgODQuNDc3MiAxMDUuNTIzIDgwIDEwMCA4MEg4NVYxMDBaIiBmaWxsPSJ3aGl0ZSIvPjxwYXRoIGQ9Ik0xNDAgMTE1SDE2NU0xNTIuNSAxMDIuNVYxMjcuNSIgc3Ryb2tlPSIjRkZEMzAwIiBzdHlsZS13aWR0aD0iOCIgc3Ryb2tlLXdpZHRoPSIxMCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PC9zdmc+',
 };
 
 /**
- * ASSETS LOCAUX (SVG Data URIs)
- * Sources intégrées pour éviter les liens brisés et assurer un rendu local immédiat.
+ * MOCK_BANNERS utilise maintenant vos images locales définies dans imageLibrary.ts
  */
-export const ASSETS = {
-  // Logo stylisé Recharge+ (Bleu & Jaune)
-  logo: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIHJ4PSI2MCIgZmlsbD0iIzFENEVEOCIvPjxwYXRoIGQ9Ik02MCAxNDBWNjBIMTAwQzExNi41NjkgNjAgMTMwIDczLjQzMTUgMTMwIDkwQzEzMCAxMDEuNDIgMTIzLjYxNSAxMTEuMzQ4IDExNC4yNDEgMTE2LjUxTDEzNSAxNDBIMTEwTDkyLjUgMTIwSDgwVjE0MEg2MFpNODAgMTAwSDk1QzEwMC41MjMgMTAwIDEwNSA5NS41MjI4IDEwNSA5MEMxMDUgODQuNDc3MiAxMDAuNTIzIDgwIDk1IDgwSDgwVjEwMFoiIGZpbGw9IndoaXRlIi8+PHBhdGggZD0iTTE0MCAxMDVIMTY1TTE1Mi41IDkyLjVWMTI3LjUiIHN0cm9rZT0iI0ZBQ0MxNSIgc3Ryb2tlLXdpZHRoPSI4IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=',
-  logoAdmin: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIHJ4PSI2MCIgZmlsbD0iIzA0MTExRCIvPjxwYXRoIGQ9Ik02MCAxNDBWNjBIMTAwQzExNi41NjkgNjAgMTMwIDczLjQzMTUgMTMwIDkwQzEzMCAxMDEuNDIgMTIzLjYxNSAxMTEuMzQ4IDExNC4yNDEgMTE2LjUxTDEzNSAxNDBIMTEwTDkyLjUgMTIwSDgwVjE0MEg2MFpNODAgMTAwSDk1QzEwMC41MjMgMTAwIDEwNSA5NS41MjI4IDEwNSA5MEMxMDUgODQuNDc3MiAxMDAuNTIzIDgwIDk1IDgwSDgwVjEwMFoiIGZpbGw9IiMxRDRERDgiLz48cGF0aCBkPSJNMTQwIDEwNUgxNjVNMTUyLjUgOTIuNVYxMjcuNSIgc3Ryb2tlPSIjRkFDQzE1IiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjwvc3ZnPg==',
-};
-
 export const MOCK_BANNERS: BannerItem[] = [
-  { 
-    id: '1', 
-    image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDgwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjgwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiMxRDRERDgiLz48Y2lyY2xlIGN4PSI3NTAiIGN5PSI1MCIgcj0iMTUwIiBmaWxsPSIjRkFDQzE1IiBmaWxsLW9wYWNpdHk9IjAuMSIvPjxwYXRoIGQ9Ik01MCAxMDBIODAwVjEwNUg1MFYxMDBaIiBmaWxsPSJ3aGl0ZSIgZmlsbC1vcGFjaXR5PSIwLjA1Ii8+PHRleHQgeD0iNDAiIHk9IjE4MCIgZmlsbD0id2hpdGUiIHN0eWxlPSJmb250OiBibGFjayA0OHB4IFBvcHBpbnMsIHNhbnMtc2VyaWY7IHRleHQtdHJhbnNmb3JtOiB1cHBlcmNhc2U7Ij5Ew6lww7R0czwvdGV4dD48dGV4dCB4PSI0MCIgeT0iMjQwIiBmaWxsPSIjRkFDQzE1IiBzdHlsZT0iZm9udDogYmxhY2sgNjRweCBQb3BwaW5zLCBzYW5zLXNlcmlmOyB0ZXh0LXRyYW5zZm9ybTogdWcHZXJjYXNlOyI+SW5zdGFudGFuw6lzPC90ZXh0Pjx0ZXh0IHg9IjQwIiB5PSIzMDAiIGZpbGw9IndoaXRlIiBmaWxsLW9wYWNpdHk9IjAuNSIgc3R5bGU9ImZvbnQ6IGJvbGQgMjRweCBQb3BwaW5zLCBzYW5zLXNlcmlmOyI+MTBldCAtIE1lbGJldCAtIEJldHdpbm5lcjwvdGV4dD48L3N2Zz4=' 
-  },
-  { 
-    id: '2', 
-    image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDgwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjgwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiNGQUNDMTUiLz48Y2lyY2xlIGN4PSI1MCIgY3k9IjM1MCIgcj0iMTUwIiBmaWxsPSIjMUQ0RUQ4IiBmaWxsLW9wYWNpdHk9IjAuMSIvPjx0ZXh0IHg9IjQwIiB5PSIxODAiIGZpbGw9IiMwNDExMUQiIHN0eWxlPSJmb250OiBibGFjayA0OHB4IFBvcHBpbnMsIHNhbnMtc2VyaWY7IHRleHQtdHJhbnNmb3JtOiB1cHBlcmNhc2U7Ij5SZXRyYWl0czwvdGV4dD48dGV4dCB4PSI0MCIgeT0iMjQwIiBmaWxsPSIjMUQ0RUQ4IiBzdHlsZT0iZm9udDogYmxhY2sgNjRweCBQb3BwaW5zLCBzYW5zLXNlcmlmOyB0ZXh0LXRyYW5zZm9ybTogdWcHZXJjYXNlOyI+MjRoLzcgRGlzcG88L3RleHQ+PHRleHQgeD0iNDAiIHk9IjMwMCIgZmlsbD0iIzA0MTExRCIgZmlsbC1vcGFjaXR5PSIwLjUiIHN0eWxlPSJmb250OiBib2xkIDI0cHggUG9wcGlucywgc2Fucy1zZXJpZjsiPlZpYSBOaXRhIGV0IEFtYW5hPC90ZXh0Pjwvc3ZnPg==' 
-  },
-  { 
-    id: '3', 
-    image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDgwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjgwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiMxMEI5ODEiLz48cGF0aCBkPSJNNTAwIDBMODAwIDQwMEg0MDBMMTAwIDBINTAwWiIgZmlsbD0id2hpdGUiIGZpbGwtb3BhY2l0eT0iMC4wNSIvPjx0ZXh0IHg9IjQwIiB5PSIxODAiIGZpbGw9IndoaXRlIiBzdHlsZT0iZm9udDogYmxhY2sgNDhweCBQb3BwaW5zLCBzYW5zLXNlcmlmOyB0ZXh0LXRyYW5zZm9ybTogdWcHZXJjYXNlOyI+QWNoYXQgQ3J5cHRvPC90ZXh0Pjx0ZXh0IHg9IjQwIiB5PSIyNDAiIGZpbGw9IndoaXRlIiBzdHlsZT0iZm9udDogYmxhY2sgNjRweCBQb3BwaW5zLCBzYW5zLXNlcmlmOyB0ZXh0LXRyYW5zZm9ybTogdWcHZXJjYXNlOyI+U8OpY3VyaXPDqSAtIDVLPC90ZXh0Pjx0ZXh0IHg9IjQwIiB5PSIzMDAiIGZpbGw9IndoaXRlIiBmaWxsLW9wYWNpdHk9IjAuNiIgc3R5bGU9ImZvbnQ6IGJvbGQgMjRweCBQb3BwaW5zLCBzYW5zLXNlcmlmOyI+VVNEVCAtIEJUQyAtIEVUSCA8L3RleHQ+PC9zdmc+' 
-  },
+  { id: 'local-b1', image: LOCAL_IMAGES.banner1 }, 
+  { id: 'local-b2', image: LOCAL_IMAGES.banner2 },
+  { id: 'local-b3', image: LOCAL_IMAGES.banner3 },
+  { id: 'local-b4', image: LOCAL_IMAGES.banner4 },
 ];
 
 export const SUPPORT_PHONE = "91 11 58 58";
-export const SUPPORT_PHONE_FULL = "+227 91 11 58 58";
-
 export const METHODS = ['Nita', 'Amana'];
 export const BOOKMAKERS = ['1xbet', 'Melbet', 'Betwinner'];
-
-export const ADMIN_CREDENTIALS = {
-  id: 'champion',
-  password: 'champion2010'
-};
+export const ADMIN_CREDENTIALS = { id: 'champion', password: 'champion2010' };

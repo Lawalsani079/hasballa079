@@ -1,6 +1,7 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { collection, onSnapshot, query, orderBy, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { collection, query, where, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { db } from './firebaseConfig';
 import SplashScreen from './views/SplashScreen';
 import Login from './views/Login';
@@ -13,232 +14,170 @@ import History from './views/History';
 import Profile from './views/Profile';
 import AdminDashboard from './views/AdminDashboard';
 import Chat from './views/Chat';
-import { User, TransactionRequest, ChatMessage } from './types';
+import AIChat from './views/AIChat';
+import NotificationsView from './views/Notifications';
+import NotificationToast from './components/NotificationToast';
+import { User, BannerItem, AppNotification, TransactionRequest } from './types';
+import { MOCK_BANNERS } from './constants';
+import { Home, ReceiptText, Fingerprint, MessageSquare } from 'lucide-react';
 
-type View = 'splash' | 'login' | 'register' | 'home' | 'deposit' | 'withdraw' | 'crypto' | 'history' | 'profile' | 'admin' | 'chat';
-
-interface AppNotification {
-  id: string;
-  userName: string;
-  type: string;
-  text?: string;
-}
+type View = 'splash' | 'login' | 'register' | 'home' | 'deposit' | 'withdraw' | 'crypto' | 'history' | 'profile' | 'admin' | 'chat' | 'notifications' | 'ai-chat';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('splash');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [requests, setRequests] = useState<TransactionRequest[]>([]);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [allUsers, setAllUsers] = useState<User[]>([]);
-  const [activeNotification, setActiveNotification] = useState<AppNotification | null>(null);
+  const [banners, setBanners] = useState<BannerItem[]>(MOCK_BANNERS);
+  const [toasts, setToasts] = useState<AppNotification[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [quotaError, setQuotaError] = useState(false);
   
-  const isInitialSync = useRef(true);
-  const currentUserRef = useRef<User | null>(null);
+  const lastRequestStates = useRef<Record<string, string>>({});
 
-  useEffect(() => {
-    currentUserRef.current = currentUser;
-    
-    if (currentUser && currentUser.role === 'user') {
-      const updateActivity = async () => {
-        try {
-          await updateDoc(doc(db, "users", currentUser.id), {
-            lastActive: Date.now()
-          });
-        } catch (e) { console.error("Heartbeat failed", e); }
-      };
-      
-      updateActivity();
-      const interval = setInterval(updateActivity, 120000);
-      return () => clearInterval(interval);
-    }
+  const addToast = useCallback((title: string, body: string, type: AppNotification['type'] = 'info') => {
+    const newNotif: AppNotification = {
+      id: Math.random().toString(36).substring(7),
+      userId: currentUser?.id || 'system',
+      title,
+      body,
+      type,
+      timestamp: Date.now(),
+      read: false
+    };
+    setToasts(prev => [...prev, newNotif]);
   }, [currentUser]);
 
-  const triggerInAppNotification = (userName: any, type: any, text?: any) => {
-    const safeUserName = String(userName || 'Client');
-    const safeType = String(type || 'Action');
-    const safeText = text ? String(text) : undefined;
-    
-    const id = Math.random().toString(36).substr(2, 9);
-    setActiveNotification({ id, userName: safeUserName, type: safeType, text: safeText });
-    
-    if (currentUserRef.current?.role === 'admin') playNotificationSound();
-    setTimeout(() => { setActiveNotification(prev => prev?.id === id ? null : prev); }, 5000);
-  };
+  const removeToast = useCallback((id: string) => setToasts(prev => prev.filter(t => t.id !== id)), []);
 
-  const playNotificationSound = () => {
-    try {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioCtx.createOscillator();
-      const gainNode = audioCtx.createGain();
-      oscillator.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-      oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
-      gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-      gainNode.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.05);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-      oscillator.start(audioCtx.currentTime);
-      oscillator.stop(audioCtx.currentTime + 0.4);
-    } catch (e) {}
-  };
+  const handleFirestoreError = useCallback((err: any) => {
+    if (err?.code === 'resource-exhausted' || err?.message?.includes('quota')) {
+      console.error("🔥 Firestore Quota Exceeded");
+      setQuotaError(true);
+    }
+  }, []);
 
   useEffect(() => {
-    let splashTimer: number | undefined;
+    if (!currentUser || quotaError) return;
+    
+    // Limitation drastique des notifications lues pour économiser le quota Niger
+    const qNotifs = query(
+      collection(db, "notifications"), 
+      where("userId", "==", currentUser.id), 
+      limit(3) 
+    );
+    
+    const unsub = onSnapshot(qNotifs, (snap) => {
+      const fetchedNotifs = snap.docs.map(doc => ({ ...doc.data(), id: doc.id } as AppNotification));
+      setNotifications(fetchedNotifs.sort((a, b) => b.timestamp - a.timestamp));
+    }, handleFirestoreError);
+    
+    return () => unsub();
+  }, [currentUser?.id, quotaError, handleFirestoreError]);
+
+  useEffect(() => {
+    if (!currentUser || currentUser.role === 'admin' || quotaError) return;
+
+    // Limitation stricte du suivi des requêtes pour préserver les lectures
+    const q = query(
+      collection(db, "requests"), 
+      where("userId", "==", currentUser.id), 
+      limit(2)
+    );
+    
+    const unsub = onSnapshot(q, (snap) => {
+      snap.docChanges().forEach(change => {
+        const data = change.doc.data() as TransactionRequest;
+        const reqId = change.doc.id;
+        if (change.type === 'modified') {
+          const oldStatus = lastRequestStates.current[reqId];
+          if (oldStatus && oldStatus !== data.status) {
+            addToast(`Statut ${data.type}`, `Votre demande est passée à: ${data.status}`, data.status === 'Validé' ? 'success' : 'error');
+          }
+        }
+        lastRequestStates.current[reqId] = data.status;
+      });
+    }, handleFirestoreError);
+
+    return () => unsub();
+  }, [currentUser?.id, quotaError, addToast, handleFirestoreError]);
+
+  useEffect(() => {
     if (currentView === 'splash') {
-      splashTimer = window.setTimeout(() => setCurrentView('login'), 2500);
+      const timer = setTimeout(() => setCurrentView('login'), 2500);
+      return () => clearTimeout(timer);
     }
-
-    // Unsubscribe references
-    let unsubReq: (() => void) | undefined;
-    let unsubMsg: (() => void) | undefined;
-    let unsubUsr: (() => void) | undefined;
-
-    const setupListeners = () => {
-      unsubReq = onSnapshot(query(collection(db, "requests"), orderBy("createdAt", "desc")), (snap) => {
-        const reqs: TransactionRequest[] = [];
-        snap.forEach(doc => {
-          const d = doc.data();
-          // Explicit mapping to ensure POJO (Plain Old JavaScript Objects) in state
-          reqs.push({
-            id: doc.id,
-            userId: String(d.userId),
-            userName: String(d.userName),
-            userPhone: String(d.userPhone),
-            type: d.type,
-            amount: String(d.amount),
-            method: String(d.method || ''),
-            bookmaker: d.bookmaker ? String(d.bookmaker) : undefined,
-            bookmakerId: d.bookmakerId ? String(d.bookmakerId) : undefined,
-            withdrawCode: d.withdrawCode ? String(d.withdrawCode) : undefined,
-            cryptoType: d.cryptoType ? String(d.cryptoType) : undefined,
-            walletAddress: d.walletAddress ? String(d.walletAddress) : undefined,
-            proofImage: d.proofImage ? String(d.proofImage) : undefined,
-            status: d.status,
-            createdAt: Number(d.createdAt)
-          });
-        });
-
-        if (!isInitialSync.current && currentUserRef.current?.role === 'admin') {
-          snap.docChanges().forEach(change => {
-            if (change.type === 'added') {
-              const d = change.doc.data();
-              triggerInAppNotification(d.userName, d.type);
-            }
-          });
-        }
-        setRequests(reqs);
-      }, (err) => console.error("Firestore Request Error:", err));
-
-      unsubMsg = onSnapshot(query(collection(db, "messages"), orderBy("createdAt", "asc")), (snap) => {
-        const msgs: ChatMessage[] = [];
-        snap.forEach(doc => {
-          const d = doc.data();
-          msgs.push({
-            id: doc.id,
-            userId: String(d.userId),
-            userName: String(d.userName),
-            text: String(d.text),
-            isAdmin: Boolean(d.isAdmin),
-            createdAt: Number(d.createdAt)
-          });
-        });
-        setMessages(msgs);
-      }, (err) => console.error("Firestore Message Error:", err));
-
-      unsubUsr = onSnapshot(collection(db, "users"), (snap) => {
-        const usersList: User[] = [];
-        snap.forEach(doc => {
-          const d = doc.data();
-          usersList.push({
-            id: doc.id,
-            name: String(d.name),
-            phone: String(d.phone),
-            role: d.role,
-            referralCode: String(d.referralCode),
-            referralBalance: Number(d.referralBalance || 0),
-            lastActive: Number(d.lastActive || Date.now())
-          });
-        });
-        setAllUsers(usersList);
-        
-        if (currentUserRef.current) {
-          const updatedMe = usersList.find(u => u.id === currentUserRef.current?.id);
-          if (updatedMe) setCurrentUser(updatedMe);
-        }
-      }, (err) => console.error("Firestore User Error:", err));
-
-      isInitialSync.current = false;
-    };
-
-    setupListeners();
-
-    return () => {
-      if (splashTimer) clearTimeout(splashTimer);
-      if (unsubReq) unsubReq();
-      if (unsubMsg) unsubMsg();
-      if (unsubUsr) unsubUsr();
-    };
   }, [currentView]);
 
   return (
-    <div className="w-full h-full max-w-md mx-auto bg-[#081a2b] shadow-2xl relative overflow-hidden flex flex-col font-['Poppins']">
-      {currentView === 'splash' && <SplashScreen />}
-      
-      {activeNotification && (
-        <div className="fixed top-4 left-4 right-4 z-[300] animate-[slideDown_0.4s_ease-out]">
-          <div className="bg-[#04111d]/95 backdrop-blur-xl border border-white/10 rounded-3xl p-4 shadow-2xl flex items-center gap-4">
-            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${activeNotification.type === 'Message' ? 'bg-yellow-400' : 'bg-blue-500'}`}>
-              <i className={`fas ${activeNotification.type === 'Message' ? 'fa-comment text-[#081a2b]' : 'fa-bell text-white'} text-sm`}></i>
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <h4 className="text-white font-black text-xs truncate">{activeNotification.userName}</h4>
-              <p className="text-blue-100/60 text-[9px] font-bold uppercase truncate">{activeNotification.text || `Action: ${activeNotification.type}`}</p>
-            </div>
+    <div className="w-full h-full max-w-md mx-auto bg-[#FACC15] shadow-2xl relative overflow-hidden flex flex-col font-['Poppins']">
+      <div className="fixed top-0 left-0 right-0 z-[1000] pointer-events-none p-4 space-y-3">
+        {toasts.map(toast => (
+          <div key={toast.id} className="pointer-events-auto">
+            <NotificationToast notification={toast} onClose={removeToast} />
           </div>
+        ))}
+      </div>
+
+      <AnimatePresence>{currentView === 'splash' && <SplashScreen />}</AnimatePresence>
+      
+      {quotaError && (
+        <div className="fixed inset-0 z-[2000] bg-[#0f172a] flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-500">
+          <div className="w-20 h-20 bg-red-600 rounded-[2.5rem] flex items-center justify-center mb-6 shadow-2xl animate-pulse">
+            <i className="fas fa-server text-white text-3xl"></i>
+          </div>
+          <h2 className="text-white font-black text-xl mb-4 uppercase tracking-tighter leading-none">Service Saturé</h2>
+          <p className="text-white/40 text-[10px] mb-12 uppercase font-black tracking-widest leading-relaxed">
+            Le quota Niger a été atteint pour aujourd'hui. <br/>
+            Veuillez réessayer demain matin à 09:00.
+          </p>
+          <button onClick={() => window.location.reload()} className="w-full bg-[#FACC15] text-slate-900 px-10 py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl border-b-4 border-yellow-600">ACTUALISER</button>
         </div>
       )}
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        {currentView === 'login' && <Login onLogin={(u) => { setCurrentUser(u); setCurrentView(u.role === 'admin' ? 'admin' : 'home'); }} onNavigateRegister={() => setCurrentView('register')} />}
-        {currentView === 'register' && <Register onRegister={(u) => { setCurrentUser(u); setCurrentView('home'); }} onNavigateLogin={() => setCurrentView('login')} />}
-        
-        {currentUser?.role === 'user' && (
-          <div className="flex-1 flex flex-col bg-[#081a2b] overflow-hidden">
-            <div className="flex-1 overflow-hidden relative flex flex-col">
-              {currentView === 'home' && <UserHome user={currentUser} onDeposit={() => setCurrentView('deposit')} onWithdraw={() => setCurrentView('withdraw')} onBuyCrypto={() => setCurrentView('crypto')} onLogout={() => { setCurrentUser(null); setCurrentView('login'); }} onChat={() => setCurrentView('chat')} />}
-              {currentView === 'deposit' && <DepositForm user={currentUser} onBack={() => setCurrentView('home')} onComplete={() => setCurrentView('history')} />}
-              {currentView === 'withdraw' && <WithdrawForm user={currentUser} onBack={() => setCurrentView('home')} onComplete={() => setCurrentView('history')} />}
-              {currentView === 'crypto' && <CryptoForm user={currentUser} onBack={() => setCurrentView('home')} onComplete={() => setCurrentView('history')} />}
-              {currentView === 'history' && <History user={currentUser} requests={requests} />}
-              {currentView === 'profile' && <Profile user={currentUser} onLogout={() => { setCurrentUser(null); setCurrentView('login'); }} onChat={() => setCurrentView('chat')} />}
-              {currentView === 'chat' && <Chat user={currentUser} messages={messages} onBack={() => setCurrentView('home')} />}
-            </div>
-
-            {['home', 'history', 'profile'].includes(currentView) && (
-              <div className="shrink-0 bg-transparent px-4 pb-6 pt-2 z-50">
-                <nav className="w-full bg-white/10 backdrop-blur-xl border border-white/10 flex justify-around py-2 px-2 rounded-[2rem] shadow-lg">
-                  <button onClick={() => setCurrentView('home')} className={`flex flex-col items-center flex-1 py-1 ${currentView === 'home' ? 'text-yellow-400' : 'text-white/40'}`}>
-                    <i className="fas fa-home text-lg mb-0.5"></i>
-                    <span className="text-[9px] font-bold uppercase">Accueil</span>
-                  </button>
-                  <button onClick={() => setCurrentView('history')} className={`flex flex-col items-center flex-1 py-1 ${currentView === 'history' ? 'text-yellow-400' : 'text-white/40'}`}>
-                    <i className="fas fa-history text-lg mb-0.5"></i>
-                    <span className="text-[9px] font-bold uppercase">Historique</span>
-                  </button>
-                  <button onClick={() => setCurrentView('profile')} className={`flex flex-col items-center flex-1 py-1 ${currentView === 'profile' ? 'text-yellow-400' : 'text-white/40'}`}>
-                    <i className="fas fa-user-circle text-lg mb-0.5"></i>
-                    <span className="text-[9px] font-bold uppercase">Profil</span>
-                  </button>
+        <AnimatePresence mode="wait">
+          {currentView === 'login' && <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 flex flex-col"><Login onLogin={(u) => { setCurrentUser(u); setCurrentView(u.role === 'admin' ? 'admin' : 'home'); }} onNavigateRegister={() => setCurrentView('register')} /></motion.div>}
+          {currentView === 'register' && <motion.div key="register" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 flex flex-col"><Register onRegister={(u) => { setCurrentUser(u); setCurrentView('home'); }} onNavigateLogin={() => setCurrentView('login')} /></motion.div>}
+          
+          {currentUser && (
+            <div key="app-view" className="flex-1 flex flex-col overflow-hidden">
+                <AnimatePresence mode="wait">
+                  {currentView === 'home' && <UserHome user={currentUser} banners={banners} unreadCount={notifications.filter(n => !n.read).length} onDeposit={() => setCurrentView('deposit')} onWithdraw={() => setCurrentView('withdraw')} onBuyCrypto={() => setCurrentView('crypto')} onLogout={() => { setCurrentUser(null); setCurrentView('login'); }} onChat={() => setCurrentView('chat')} onNotify={() => setCurrentView('notifications')} onAIChat={() => setCurrentView('ai-chat')} />}
+                  {currentView === 'deposit' && <DepositForm user={currentUser} onBack={() => setCurrentView('home')} onComplete={() => setCurrentView('history')} onQuotaError={() => setQuotaError(true)} />}
+                  {currentView === 'withdraw' && <WithdrawForm user={currentUser} onBack={() => setCurrentView('home')} onComplete={() => setCurrentView('history')} onQuotaError={() => setQuotaError(true)} />}
+                  {currentView === 'crypto' && <CryptoForm user={currentUser} onBack={() => setCurrentView('home')} onComplete={() => setCurrentView('history')} onQuotaError={() => setQuotaError(true)} />}
+                  {currentView === 'history' && <History user={currentUser} onBack={() => setCurrentView('home')} />}
+                  {currentView === 'profile' && <Profile user={currentUser} onLogout={() => { setCurrentUser(null); setCurrentView('login'); }} onChat={() => setCurrentView('chat')} onNotify={() => setCurrentView('notifications')} />}
+                  {currentView === 'chat' && <Chat user={currentUser} onBack={() => setCurrentView('home')} />}
+                  {currentView === 'ai-chat' && <AIChat user={currentUser} onBack={() => setCurrentView('home')} />}
+                  {currentView === 'notifications' && <NotificationsView notifications={notifications} onBack={() => setCurrentView('home')} onMarkAsRead={() => {}} onMarkAllAsRead={() => {}} onDelete={() => {}} />}
+                  {currentView === 'admin' && <AdminDashboard banners={banners} onLogout={() => { setCurrentUser(null); setCurrentView('login'); }} addToast={addToast} />}
+                </AnimatePresence>
+              
+              {currentUser.role === 'user' && ['home', 'history', 'profile', 'chat'].includes(currentView) && (
+                <nav className="shrink-0 px-8 pb-10 pt-2 bg-transparent">
+                  <div className="bg-white/90 backdrop-blur-2xl border border-white/50 flex justify-around py-4 px-2 rounded-[2.5rem] shadow-2xl">
+                    {[
+                      { id: 'home', icon: Home, label: 'Accueil' },
+                      { id: 'history', icon: ReceiptText, label: 'Activité' },
+                      { id: 'chat', icon: MessageSquare, label: 'Chat' },
+                      { id: 'profile', icon: Fingerprint, label: 'Compte' }
+                    ].map((item) => {
+                      const Icon = item.icon;
+                      const isActive = currentView === item.id;
+                      return (
+                        <button key={item.id} onClick={() => setCurrentView(item.id as any)} className={`relative flex flex-col items-center flex-1 transition-all py-1 ${isActive ? 'text-[#0047FF] scale-110' : 'text-slate-400'}`}>
+                          <Icon size={20} className="mb-1.5" />
+                          <span className="text-[7px] font-black uppercase tracking-[0.2em]">{item.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </nav>
-              </div>
-            )}
-          </div>
-        )}
-
-        {currentUser?.role === 'admin' && (
-          <AdminDashboard requests={requests} messages={messages} allUsers={allUsers} onLogout={() => { setCurrentUser(null); setCurrentView('login'); }} />
-        )}
+              )}
+            </div>
+          )}
+        </AnimatePresence>
       </div>
-      <style>{`@keyframes slideDown { from { transform: translateY(-120%); } to { transform: translateY(0); } }`}</style>
     </div>
   );
 };

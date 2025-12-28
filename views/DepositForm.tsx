@@ -5,13 +5,45 @@ import { db } from '../firebaseConfig';
 import { User } from '../types';
 import { METHODS, BOOKMAKERS, SUPPORT_PHONE } from '../constants';
 
+// Optimisation Photo : Résolution 1200px pour lire parfaitement le texte du reçu
+const compressImage = (base64: string): Promise<string> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.src = base64;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const MAX_WIDTH = 1200; 
+      const MAX_HEIGHT = 1600; 
+      let width = img.width;
+      let height = img.height;
+      if (width > height) {
+        if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+      } else {
+        if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, width, height);
+      }
+      // Qualité 0.7 : Compromis parfait entre netteté et poids (~350Ko max)
+      resolve(canvas.toDataURL('image/jpeg', 0.7)); 
+    };
+    img.onerror = () => resolve(base64);
+  });
+};
+
 interface DepositFormProps {
   user: User;
   onBack: () => void;
   onComplete: () => void;
+  onQuotaError: () => void;
 }
 
-const DepositForm: React.FC<DepositFormProps> = ({ user, onBack, onComplete }) => {
+const DepositForm: React.FC<DepositFormProps> = ({ user, onBack, onComplete, onQuotaError }) => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ amount: '', method: '', bookmaker: '', bookmakerId: '', proofImage: '' });
@@ -19,28 +51,36 @@ const DepositForm: React.FC<DepositFormProps> = ({ user, onBack, onComplete }) =
 
   const handleNext = () => {
     if (!formData.amount || !formData.method || !formData.bookmaker || formData.bookmakerId.length < 5) {
-      setError('Veuillez remplir tous les champs correctement.');
+      setError('Remplissez tous les champs obligatoires.');
       return;
     }
     setError('');
     setStep(2);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 10 * 1024 * 1024) { setError("Fichier trop lourd (>10Mo)"); return; }
+      setLoading(true);
       const reader = new FileReader();
-      reader.onloadend = () => setFormData({ ...formData, proofImage: reader.result as string });
+      reader.onloadend = async () => {
+        try {
+          const compressed = await compressImage(reader.result as string);
+          setFormData({ ...formData, proofImage: compressed });
+        } catch (err) {
+          setError("Échec de compression.");
+        } finally { setLoading(false); }
+      };
       reader.readAsDataURL(file);
     }
   };
 
   const handleSubmit = async () => {
-    if (!formData.proofImage) {
-      setError('La preuve de paiement est obligatoire');
-      return;
-    }
+    if (!formData.proofImage) { setError('Photo du reçu obligatoire'); return; }
+    setError('');
     setLoading(true);
+
     try {
       await addDoc(collection(db, "requests"), {
         userId: user.id,
@@ -48,12 +88,17 @@ const DepositForm: React.FC<DepositFormProps> = ({ user, onBack, onComplete }) =
         userPhone: user.phone,
         type: 'Dépôt',
         status: 'En attente',
-        createdAt: Date.now(),
-        ...formData
+        amount: formData.amount,
+        method: formData.method,
+        bookmaker: formData.bookmaker,
+        bookmakerId: formData.bookmakerId,
+        proofImage: formData.proofImage,
+        createdAt: Date.now()
       });
       setStep(3);
-    } catch (err) {
-      setError('Erreur lors de l\'envoi de la demande');
+    } catch (err: any) {
+      if (err?.code === 'resource-exhausted') onQuotaError();
+      else setError("Erreur serveur, réessayez.");
     } finally {
       setLoading(false);
     }
@@ -61,212 +106,107 @@ const DepositForm: React.FC<DepositFormProps> = ({ user, onBack, onComplete }) =
 
   if (step === 3) {
     return (
-      <div className="flex-1 bg-[#081a2b] flex flex-col items-center justify-center p-8 animate-in fade-in zoom-in duration-500">
-        <div className="relative mb-10">
-          <div className="absolute inset-0 bg-blue-400 blur-3xl rounded-full opacity-20 scale-150"></div>
-          <div className="relative w-24 h-24 bg-blue-600 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-black/20">
-            <i className="fas fa-check text-white text-4xl"></i>
-          </div>
+      <div className="flex-1 bg-[#FACC15] flex flex-col items-center justify-center p-8 animate-in fade-in">
+        <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-xl mb-6">
+          <i className="fas fa-paper-plane text-blue-600 text-3xl animate-bounce"></i>
         </div>
-        
-        <h2 className="text-2xl font-black text-white text-center mb-3 uppercase tracking-tight">Dépôt Confirmé !</h2>
-        <p className="text-white/60 text-center text-sm mb-12 leading-relaxed max-w-[250px]">
-          Votre demande de <span className="font-bold text-white">{formData.amount} FCFA</span> a été transmise avec succès.
-        </p>
-
-        <div className="w-full space-y-4 max-w-xs">
-          <button 
-            onClick={onComplete}
-            className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-black/20 active:scale-95 transition-all text-xs uppercase tracking-widest"
-          >
-            Suivre ma demande
-          </button>
-          <button 
-            onClick={onBack}
-            className="w-full text-white/40 font-bold py-2 active:scale-95 transition-all text-[10px] uppercase tracking-widest"
-          >
-            Fermer
-          </button>
-        </div>
+        <h2 className="text-xl font-black text-slate-900 uppercase">Demande Envoyée</h2>
+        <p className="text-slate-700 text-center text-xs mt-3 font-bold opacity-60 px-6">L'admin vérifie votre reçu haute définition. <br/>Délai estimé: 5-10 min.</p>
+        <button onClick={onComplete} className="mt-12 w-full bg-slate-900 text-white font-black py-5 rounded-2xl text-[10px] uppercase tracking-[0.2em] shadow-xl">VOIR ACTIVITÉ</button>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 bg-[#081a2b] flex flex-col overflow-hidden">
-      {/* Header adapté */}
-      <div className="bg-[#081a2b] px-6 pt-12 pb-6 flex items-center justify-between border-b border-white/5">
-        <button onClick={step === 1 ? onBack : () => setStep(1)} className="w-10 h-10 flex items-center justify-center bg-white/5 rounded-xl text-white active:scale-90 transition-all">
-          <i className={`fas ${step === 1 ? 'fa-times' : 'fa-chevron-left'}`}></i>
-        </button>
-        <div className="flex flex-col items-center">
-          <h2 className="text-white font-black text-sm uppercase tracking-widest">Effectuer un Dépôt</h2>
-          <div className="flex gap-1.5 mt-2">
-            <div className={`h-1 rounded-full transition-all duration-300 ${step >= 1 ? 'w-6 bg-blue-500' : 'w-2 bg-white/10'}`}></div>
-            <div className={`h-1 rounded-full transition-all duration-300 ${step >= 2 ? 'w-6 bg-blue-500' : 'w-2 bg-white/10'}`}></div>
-          </div>
+    <div className="flex-1 bg-[#FACC15] flex flex-col h-full overflow-hidden">
+      <div className="px-6 pt-12 pb-6 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <button onClick={step === 1 ? onBack : () => setStep(1)} className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-900 border border-white active:scale-90 transition-all">
+            <i className={`fas ${step === 1 ? 'fa-times' : 'fa-arrow-left'}`}></i>
+          </button>
+          <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Déposer Cash</h2>
         </div>
-        <div className="w-10"></div>
+        <div className="bg-blue-600 text-white px-3 py-1 rounded-lg text-[8px] font-black uppercase">Étape {step}/2</div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-8">
+      <div className="flex-1 bg-white rounded-t-[3.5rem] p-8 overflow-y-auto no-scrollbar shadow-[0_-20px_40px_rgba(0,0,0,0.05)] border-t-4 border-white">
         {step === 1 ? (
-          <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500 pb-10">
-            {/* Warning Message adapté */}
-            <div className="bg-yellow-400/10 border border-yellow-400/20 p-4 rounded-2xl flex gap-3 items-start">
-              <i className="fas fa-info-circle text-yellow-400 mt-1"></i>
-              <p className="text-yellow-100 text-[11px] leading-relaxed">
-                <span className="font-black uppercase block mb-1">Action requise</span>
-                Envoyez d'abord le montant au <span className="font-black text-yellow-400 underline">{SUPPORT_PHONE}</span> avant de valider ce formulaire.
-              </p>
-            </div>
-
-            <div className="space-y-5">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-white/40 uppercase tracking-widest px-1">Montant à déposer</label>
-                <div className="relative group">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-blue-400 transition-colors">
-                    <i className="fas fa-coins"></i>
-                  </div>
-                  <input 
-                    type="number" 
-                    placeholder="Montant en FCFA" 
-                    className="w-full bg-white/5 py-4 pl-12 pr-4 rounded-2xl outline-none border border-white/5 focus:border-blue-500 text-white font-bold transition-all" 
-                    value={formData.amount} 
-                    onChange={e => setFormData({...formData, amount: e.target.value})} 
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-white/40 uppercase tracking-widest px-1">Bookmaker</label>
-                  <select 
-                    className="w-full bg-white/5 py-4 px-4 rounded-2xl outline-none border border-white/5 focus:border-blue-500 font-bold text-white transition-all appearance-none" 
-                    value={formData.bookmaker} 
-                    onChange={e => setFormData({...formData, bookmaker: e.target.value})}
-                  >
-                    <option value="" className="bg-[#081a2b]">Choisir</option>
-                    {BOOKMAKERS.map(b => <option key={b} value={b} className="bg-[#081a2b]">{b}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-white/40 uppercase tracking-widest px-1">Méthode</label>
-                  <select 
-                    className="w-full bg-white/5 py-4 px-4 rounded-2xl outline-none border border-white/5 focus:border-blue-500 font-bold text-white transition-all appearance-none" 
-                    value={formData.method} 
-                    onChange={e => setFormData({...formData, method: e.target.value})}
-                  >
-                    <option value="" className="bg-[#081a2b]">Choisir</option>
-                    {METHODS.map(m => <option key={m} value={m} className="bg-[#081a2b]">{m}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-white/40 uppercase tracking-widest px-1">ID Joueur</label>
-                <div className="relative group">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-blue-400 transition-colors">
-                    <i className="fas fa-id-card"></i>
-                  </div>
-                  <input 
-                    type="text" 
-                    maxLength={11} 
-                    placeholder="11 chiffres requis" 
-                    className="w-full bg-white/5 py-4 pl-12 pr-4 rounded-2xl outline-none border border-white/5 focus:border-blue-500 text-white font-bold transition-all" 
-                    value={formData.bookmakerId} 
-                    onChange={e => setFormData({...formData, bookmakerId: e.target.value.replace(/\D/g, '')})} 
-                  />
-                </div>
-              </div>
-            </div>
-
-            {error && <p className="text-red-400 text-center text-[10px] font-black uppercase tracking-widest bg-red-500/10 py-3 rounded-xl border border-red-500/10">{error}</p>}
-
-            <button 
-              onClick={handleNext} 
-              className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-black/20 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-[0.2em] text-xs"
-            >
-              Suivant <i className="fas fa-chevron-right text-[10px]"></i>
-            </button>
-
-            {/* Tutoriel Vidéo */}
-            <div className="mt-8 space-y-4">
-              <div className="flex items-center gap-2 px-1">
-                <div className="w-1 h-4 bg-yellow-400 rounded-full"></div>
-                <h3 className="text-white font-black text-[10px] uppercase tracking-[0.2em]">Besoin d'aide ? Tutoriel</h3>
-              </div>
-              
-              <div className="w-full overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl bg-black/40 aspect-video relative group">
-                <iframe 
-                  className="w-full h-full"
-                  src="https://www.youtube.com/embed/dQw4w9WgXcQ?controls=1&rel=0" 
-                  title="Comment effectuer un dépôt sur Recharge+" 
-                  frameBorder="0" 
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                  allowFullScreen
-                ></iframe>
-              </div>
-              <p className="text-[9px] text-white/30 text-center font-bold uppercase tracking-widest px-4">
-                Regardez cette vidéo de 1 minute pour comprendre comment recharger votre compte sans erreur.
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
-            <div className="bg-white/5 rounded-3xl p-6 border border-white/10 shadow-sm space-y-4">
-              <h3 className="text-white font-black text-xs uppercase tracking-widest border-b border-white/5 pb-4 flex items-center gap-2">
-                <i className="fas fa-file-invoice text-blue-400"></i> Récapitulatif
-              </h3>
-              <div className="space-y-3 pt-2">
-                {[
-                  { label: 'Montant', val: formData.amount + ' FCFA' },
-                  { label: 'Bookmaker', val: formData.bookmaker },
-                  { label: 'ID Joueur', val: formData.bookmakerId },
-                  { label: 'Méthode', val: formData.method }
-                ].map((item, i) => (
-                  <div key={i} className="flex justify-between items-center">
-                    <span className="text-white/40 text-[10px] font-bold uppercase tracking-widest">{item.label}</span>
-                    <span className="text-white font-black text-sm">{item.val}</span>
-                  </div>
-                ))}
-              </div>
+          <div className="space-y-6">
+            <div className="bg-blue-50/50 p-6 rounded-[2rem] border border-blue-100 flex items-start gap-4 shadow-sm">
+               <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-200"><i className="fas fa-info-circle"></i></div>
+               <p className="text-[11px] font-bold text-slate-600 leading-relaxed">
+                 Envoyez le montant sur <span className="text-blue-700 font-black">{SUPPORT_PHONE}</span> (Nita/Amana) puis joignez le reçu original à l'étape suivante.
+               </p>
             </div>
 
             <div className="space-y-4">
-              <label className="block text-[10px] font-black text-white/40 uppercase tracking-widest px-1">Preuve de transfert (Reçu)</label>
-              
+               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <label className="text-[8px] font-black uppercase text-slate-400 ml-2 mb-1 block tracking-widest">Somme Transférée (FCFA)</label>
+                  <input type="number" placeholder="2500, 5000, 10000..." className="w-full bg-transparent py-2 text-slate-900 font-black text-sm outline-none" value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} />
+               </div>
+               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <label className="text-[8px] font-black uppercase text-slate-400 ml-2 mb-1 block tracking-widest">Bookmaker Cible</label>
+                  <select className="w-full bg-transparent py-2 text-slate-900 font-black text-sm outline-none" value={formData.bookmaker} onChange={e => setFormData({...formData, bookmaker: e.target.value})}>
+                    <option value="">Sélectionner...</option>
+                    {BOOKMAKERS.map(b => <option key={b} value={b}>{b}</option>)}
+                  </select>
+               </div>
+               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <label className="text-[8px] font-black uppercase text-slate-400 ml-2 mb-1 block tracking-widest">ID Joueur</label>
+                  <input type="text" placeholder="Entrez votre ID bookmaker" className="w-full bg-transparent py-2 text-slate-900 font-black text-sm outline-none" value={formData.bookmakerId} onChange={e => setFormData({...formData, bookmakerId: e.target.value})} />
+               </div>
+               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <label className="text-[8px] font-black uppercase text-slate-400 ml-2 mb-1 block tracking-widest">Guichet utilisé</label>
+                  <select className="w-full bg-transparent py-2 text-slate-900 font-black text-sm outline-none" value={formData.method} onChange={e => setFormData({...formData, method: e.target.value})}>
+                    <option value="">Sélectionner...</option>
+                    {METHODS.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+               </div>
+            </div>
+            {error && <p className="text-red-500 text-[10px] font-black text-center uppercase tracking-widest bg-red-50 py-3 rounded-xl">{error}</p>}
+            <button onClick={handleNext} className="w-full bg-[#0047FF] text-white font-black py-5 rounded-2xl text-[10px] uppercase shadow-xl active:scale-95 transition-all tracking-[0.2em]">ÉTAPE SUIVANTE</button>
+          </div>
+        ) : (
+          <div className="space-y-8 animate-in slide-in-from-right duration-500">
+            <div className="text-center">
+               <h3 className="text-slate-900 font-black text-lg uppercase tracking-tighter">Preuve de Paiement</h3>
+               <p className="text-slate-400 text-[10px] font-bold mt-1 uppercase tracking-widest">Haute résolution requise</p>
+            </div>
+
+            <div className="bg-slate-50 p-8 rounded-[3rem] border-4 border-dashed border-slate-200 flex flex-col items-center shadow-inner group">
               {!formData.proofImage ? (
-                <div className="grid grid-cols-2 gap-4">
-                  <label className="flex flex-col items-center justify-center bg-white/5 border-2 border-dashed border-white/10 rounded-[2rem] h-32 text-white/40 active:bg-white/10 active:border-blue-400 transition-all cursor-pointer">
-                    <i className="fas fa-camera text-2xl mb-2"></i>
-                    <span className="text-[9px] font-black uppercase tracking-widest">Prendre Photo</span>
+                <div className="grid grid-cols-2 gap-4 w-full h-44">
+                  <label className="bg-white rounded-[2rem] flex flex-col items-center justify-center gap-2 cursor-pointer shadow-sm border border-slate-100 active:bg-blue-50 transition-all">
+                    <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shadow-inner"><i className="fas fa-camera text-xl"></i></div>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Appareil</span>
                     <input type="file" capture="environment" accept="image/*" className="hidden" onChange={handleImageUpload} />
                   </label>
-                  <label className="flex flex-col items-center justify-center bg-white/5 border-2 border-dashed border-white/10 rounded-[2rem] h-32 text-white/40 active:bg-white/10 active:border-blue-400 transition-all cursor-pointer">
-                    <i className="fas fa-images text-2xl mb-2"></i>
-                    <span className="text-[9px] font-black uppercase tracking-widest">De la Galerie</span>
+                  <label className="bg-white rounded-[2rem] flex flex-col items-center justify-center gap-2 cursor-pointer shadow-sm border border-slate-100 active:bg-blue-50 transition-all">
+                    <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shadow-inner"><i className="fas fa-images text-xl"></i></div>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Galerie</span>
                     <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                   </label>
                 </div>
               ) : (
-                <div className="relative group">
-                  <img src={formData.proofImage} className="w-full h-48 object-cover rounded-[2rem] shadow-lg border-2 border-white/10" alt="Reçu" />
-                  <button onClick={() => setFormData({...formData, proofImage: ''})} className="absolute top-4 right-4 bg-red-500 text-white w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg active:scale-90 transition-all">
-                    <i className="fas fa-times"></i>
-                  </button>
+                <div className="relative w-full aspect-square rounded-[2rem] overflow-hidden border-2 border-white shadow-2xl">
+                  <img src={formData.proofImage} className="w-full h-full object-cover" alt="Reçu Haute Qualité" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
+                  <button onClick={() => setFormData({...formData, proofImage: ''})} className="absolute top-4 right-4 bg-red-600 text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-xl active:scale-90 border-2 border-white"><i className="fas fa-times"></i></button>
                 </div>
               )}
             </div>
 
-            {error && <p className="text-red-400 text-center text-[10px] font-black uppercase tracking-widest bg-red-500/10 py-3 rounded-xl border border-red-500/10">{error}</p>}
+            <div className="bg-yellow-50 p-4 rounded-2xl border border-yellow-100 flex gap-3">
+               <i className="fas fa-shield-check text-yellow-600 mt-1"></i>
+               <p className="text-[9px] font-bold text-yellow-800 leading-relaxed uppercase tracking-tighter">
+                 En cliquant sur confirmer, vous attestez avoir envoyé l'argent. Toute fausse preuve entraînera un bannissement définitif.
+               </p>
+            </div>
 
-            <button 
-              onClick={handleSubmit} 
-              disabled={loading}
-              className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-black/20 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-[0.2em] text-xs"
-            >
-              {loading ? <i className="fas fa-circle-notch animate-spin"></i> : <><i className="fas fa-paper-plane"></i> Envoyer la demande</>}
+            {error && <p className="text-red-500 text-[10px] font-black text-center uppercase tracking-widest">{error}</p>}
+            
+            <button onClick={handleSubmit} disabled={loading} className="w-full bg-slate-900 text-white font-black py-6 rounded-2xl text-[10px] uppercase shadow-2xl flex items-center justify-center gap-4 active:scale-95 transition-all tracking-[0.25em]">
+              {loading ? <i className="fas fa-circle-notch animate-spin text-lg"></i> : <><i className="fas fa-check-circle"></i> CONFIRMER DÉPÔT</>}
             </button>
           </div>
         )}

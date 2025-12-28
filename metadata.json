@@ -1,6 +1,6 @@
 {
   "name": "Recharge+",
-  "description": "Une application mobile moderne pour les dépôts et retraits de bookmakers avec une interface d'administration temps réel.",
+  "description": "Application de dépôts et retraits ultra-rapides pour bookmakers.",
   "requestFramePermissions": [
     "camera",
     "microphone",
